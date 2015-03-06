@@ -46,12 +46,12 @@ error = function (err) {
 
 Class = {};
 
-Class.names = ["Class"];
+Class._names = ["Class"];
 Class._isClass_ = true;
 
 Class.extend = function (name) {
 	if (typeof(name) != "string") {
-		name = "";
+		name = null;
 	}
 	var temp = {};
 	var supr = {};
@@ -62,7 +62,7 @@ Class.extend = function (name) {
 		}
 	}
 	temp.super = supr;
-	temp.names.push(name);
+	temp._names.push(name);
 	return temp;
 }
 
@@ -73,7 +73,7 @@ Class.new = function () {
 	// self.__clone = null;
 	// delete self.isClass;
 	if (!self.init) {
-		throw(this.names[this.names.length-1] + " has no constructor");
+		throw(this._names[this._names.length-1] + " has no constructor");
 	}
 	self.init.apply(self,arguments);
 	return self;
@@ -90,8 +90,9 @@ Class.implement = function (obj) {
 
 
 Class.is = function (obj) {
-	for (var i = 0; i < this.names.length; i++) {
-		if (this.names[i] == obj.type()) {
+	var t = typeof(obj);
+	for (var i = 0; i < this._names.length; i++) {
+		if ((t == "object" && this._names[i] == obj.type()) || (obj == this._names[i])) {
 			return true;
 		}
 	}
@@ -100,10 +101,10 @@ Class.is = function (obj) {
 
 
 Class.type = function () {
-	if (this.names[this.names.length-1].length == 0) {
+	if (this._names[this._names.length-1].length == 0) {
 		throw("Add a type name! class:extend([TYPE])");
 	}
-	return this.names[this.names.length-1];
+	return this._names[this._names.length-1];
 }
 
 Class.__clone = function(obj,supr) {
@@ -132,8 +133,10 @@ Class.__clone = function(obj,supr) {
 }
 
 Class.isClass = function (c) {
-	if (c["_isClass_"]) {
-		return true;
+	if (c!=null) {
+		if (c["_isClass_"]) {
+			return true;
+		}
 	}
 	return false;
 }
@@ -164,17 +167,22 @@ baa._checkType = function () {
 	if (!this._typesafe) { return };
 	var name = arguments[0];
 	var obj = arguments[1];
+
 	str = ""
-	type = obj == null ? null : typeof(obj);
+	var type = obj == null ? null : typeof(obj);
+	var clss =  Class.isClass(obj);
 	for (var i = 2; i < arguments.length; i++) {
+		
+		str = str + arguments[i];
 		if (arguments[i] == type) {
 			return;
 		}
-		if (i != arguments.length-1) {
-			str = str + arguments[i] + ", ";
+		else if (clss && (obj.is(arguments[i]))) {
+			return;
 		}
-		else {
-			str = str + arguments[i];
+	
+		if (i != arguments.length-1) {
+			str = str + ", ";
 		}
 	}
 	throw("Wrong type '" + type + "' for " + name + ". Correct types: " + str);
@@ -192,6 +200,425 @@ baa.timestamp = function () {
 baa.time = {now:0,dt:0,last:0};
 baa.time.last = baa.timestamp();
 
+////////////////////////////////
+///////////////////////////////
+
+
+
+
+//Point
+//////////////////////////////////
+
+baa.point = Class.extend("baa.point");
+
+baa.point.init = function (x,y) {
+	baa._checkType("x",x,"number",null);
+	baa._checkType("y",y,"number",null);
+	
+	this.x = x || 0;
+	this.y = y == null ? this.x : y;
+}
+
+baa.point.set = function (x,y) {
+	baa._checkType("x",x,"number",null);
+	baa._checkType("y",y,"number",null);
+
+	this.x = x || 0;
+	this.y = y == null ? this.x : y;
+}
+
+baa.point.clone = function (p) {
+	baa._checkType("point",p,"baa.point");
+
+	this.x = p.x;
+	this.y = p.y;
+}
+
+baa.point.overlaps = function (r) {
+	baa._checkType("rectangle",r,"baa.rect");
+	return r.x + r.width > this.x && r.x < this.x
+		&& r.y + r.height > this.y && r.y < this.y;
+}
+
+//rect
+//////////////////////////////////
+
+baa.rect = baa.point.extend("baa.rect");
+
+baa.rect.init = function (x,y,width,height) {
+	baa.rect.super.init(this,x,y);
+	baa._checkType("width",width,"number",null);
+	baa._checkType("height",height,"number",null);
+
+	this.width = width || 0;
+	this.height = height == null ? this.width : height;
+	this.color;
+}
+
+baa.rect.draw = function (mode,r) {
+	if (this.color) {
+		baa.graphics.setColor(this.color);
+	}
+	baa.graphics.rectangle(mode || "fill",this.x,this.y,this.width,this.height,r);
+}
+
+
+baa.rect.set = function (x,y,width,height) {
+	baa.rect.super.init(x,y);
+	baa._checkType("width",width,"number",null);
+	baa._checkType("height",height,"number",null);
+
+	this.x = x;
+	this.y = y == null ? this.x : y;
+	this.width = width;
+	this.height = height == null ? width : height;
+}
+
+baa.rect.clone = function (r) {
+	baa._checkType("rect",r,"baa.rect");
+
+	this.x = r.x;
+	this.y = r.y;
+	this.width = r.width;
+	this.height = r.height;
+}
+
+baa.rect.left = function (v) {
+	baa._checkType("x",v,"number",null);
+
+	if (v!=null) { this.x = v; }
+	return this.x;
+}
+
+baa.rect.right = function (v) {
+	baa._checkType("x",v,"number",null);
+
+	if (v!=null) { this.x = v - this.width};
+	return this.x + this.width;
+}
+
+baa.rect.top = function (v) {
+	baa._checkType("y",v,"number",null);
+
+	if (v!=null) { this.y = v; }
+	return this.y;
+}
+
+baa.rect.bottom = function (v) {
+	baa._checkType("y",v,"number",null);
+
+	if (v!=null) { this.y = v - this.height};
+	return this.y + this.height;
+}
+
+baa.rect.xCenter = function (v) {
+	baa._checkType("x",v,"number",null);
+
+	if (v!=null) { this.x = v - this.width/2 };
+	return this.x + this.width/2;
+}
+
+baa.rect.yCenter = function (v) {
+	baa._checkType("y",v,"number",null);
+
+	if (v!=null) { this.y = v - this.height/2 };
+	return this.y + this.height/2;
+}
+
+baa.rect.overlaps = function (r) {
+	baa._checkType("rect",r,"baa.rect","baa.point");
+	return this.x + this.width > r.x && this.x < r.x + (r.width || 0) 
+		&& this.y + this.height > r.y && this.y < r.y + (r.height || 0) ;
+}
+
+baa.rect.overlapsX = function (r) {
+	baa._checkType("rect",r,"baa.rect","baa.point");
+
+	return this.x + this.width > r.x && this.x < r.x + r.width;
+}
+
+baa.rect.overlapsY = function (r) {
+	baa._checkType("rect",r,"baa.rect","baa.point");
+
+	return this.y + this.height > r.y && this.y < r.y + r.height;
+}
+
+//Sprite
+//////////////////////////////
+
+baa.sprite = baa.rect.extend("baa.sprite");
+
+baa.sprite.init = function (x,y) {
+	baa.sprite.super.init(this,x,y);
+	this.origin = baa.point.new(0,0);
+	this.offset = baa.point.new(0,0);
+	this.scale = baa.point.new(1,1);
+	this.alpha = 1;
+	this.rotation = 0;
+	this.flip = false;
+
+	this.image;
+	this.frames = [];
+	this.animations = {}
+	this.frameTimer = 1;
+	this.frameTimerDir = 1;
+	this.currentFrame = 1;
+	this.currentAnim = "idle";
+	this.animPlaying = true;
+	this.animEnded = false;
+}
+
+baa.sprite.update = function () {
+	this.animate()
+}
+
+baa.sprite.draw = function () {
+	if (this.image) {
+		baa.graphics.setAlpha(this.alpha);
+		this.image.draw(this.frames[this.currentFrame-1],
+		this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
+		this.rotation,this.scale.x,this.scale.y,this.origin.x,this.origin.y)
+	}
+}
+
+baa.sprite.centerOrigin = function () {
+	this.origin.x = this.width/2;
+	this.origin.y = this.height/2;
+}
+
+baa.sprite.setImage = function (url,width,height,smooth) {
+	this.image = baa.graphics.newImage(url,smooth);
+	this.width = width || this.image.getWidth();
+	this.height = height || this.image.getHeight();
+	this.frames = [];
+	for (var i=0; i < this.image.getHeight()/this.height; i++) {
+		for (var j=0; j < this.image.getWidth()/this.width; j++) {
+			this.frames.push({x:j*this.width,y:i*this.height,width:this.width,height:this.height});
+		}
+	}
+	this.centerOrigin();
+}
+
+baa.sprite.addAnimation = function (name,start,finish,speed,mode,semi) {
+	this.animations[name] = {};
+	var obj = this.animations[name];
+	obj.start = start;
+	obj.finish = finish;
+	obj.speed = speed || 15;
+	obj.mode = mode || "loop";
+	if (semi==null) {
+		obj.semi = start;
+	}
+	else {
+		this.animations[name].hasSemi = true;
+		this.animations[name].semi = semi;
+	}
+		
+}
+
+baa.sprite.setAnimation = function (anim) {
+	if (this.currentAnim != anim) {
+		this.currentAnim = anim;
+		this.animEnded = false;
+		this.currentAnim = this.anim;
+		this.frameTimer = this.anims[this.anim].start;
+		this.frameTimerDir = this.anims[this.anim].direction;
+	}
+}
+
+baa.sprite.animate = function () {
+	if (this.animPlaying) {
+		if (this.animations.hasOwnProperty(this.currentAnim)) {
+			var anim = this.animations[this.currentAnim];
+			if (anim.start == anim.finish) {
+				this.frameTimer = anim.start;
+				this.frame = this.frameTimer;
+				return;
+			}
+			if (typeof(anim.speed) == "number") {
+				this.frameTimer += dt * anim.speed * this.frameTimerDir;
+			}
+			else {
+				this.frameTimer += dt * anim.speed[this.frame] * this.frameTimerDir;
+			}
+			if (this.frameTimer > anim.finish+1 || this.frameTimer < anim.start) {
+				if (anim.mode == "loop") {
+					this.frameTimer = anim.semi;
+					if (anim.hasSemi) {
+						this.animEnded = true;
+					}
+				}
+				else if (anim.mode == "once") {
+					this.frameTimer = anim.finish;
+					this.animPlaying = false;
+					this.animEnded = true;
+				}
+				else if (anim.mode == "pingpong") {
+					this.frameTimer = this.frameTimeDir > 0 ? anim.finish : anim.start;
+					this.frameTimerDir = -this.frameTimerDir;
+				}
+			}
+			this.currentFrame = Math.floor(this.frameTimer);
+		}
+	}
+}
+
+baa.sprite.playAnimation = function () {
+	this.animPlaying = true;
+}
+
+baa.sprite.pauseAnimation = function () {
+	this.animPlaying = false;
+}
+
+baa.sprite.stopAnimation = function () {
+	this.animPlaying = false;
+	this.setFrame(1);
+	this.animEnded = false;
+}
+
+baa.sprite.replayAnimation = function () {
+	this.animPlaying = true;
+	this.setFrame(1);
+	this.animEnded = false;
+}
+
+baa.sprite.hasAnimationEnded = function () {
+	return this.animEnded;
+}
+
+baa.sprite.isAnimationPlaying = function () {
+	return this.animPlaying;
+}
+
+baa.sprite.getAnimationFrame = function () {
+	return this.frame - this.anims[this.currentAnim].start+1;
+}
+
+baa.sprite.setAnimationFrame = function (f) {
+	var anim = this.animations[this.currentAnim];
+	if (anim.finish - anim.start < f) {
+		throw("There are only " + anim.finish - anim.start + " frames. Not " + f);
+	}
+	this.frame = anim.start + f;
+	this.frameTimer = this.frame;
+}
+
+
+//Entity
+//////////////////////////////
+
+baa.entity = baa.sprite.extend("baa.entity");
+
+baa.entity.init = function (x,y,w,h) {
+	baa.entity.super.init(this,x,y,w,h);
+	this.last = baa.rect.new(x,y,w,h);
+	this.velocity = baa.point.new();
+	this.maxVelocity = baa.point.new(99999,99999);
+	this.accel = baa.point.new();
+	this.drag = baa.point.new();
+	this.bounce = baa.point.new();
+
+	this.separatePriority = 0;
+	this.solid = true;
+
+	this.once = baa.once.new(this);
+}
+
+baa.entity.update = function () {
+	baa.entity.super.update(this);
+	this.updateMovement();
+}
+
+baa.entity.updateMovement = function () {
+	this.last.clone(this);
+
+	this.velocity.x += this.accel.x * dt;
+	if (Math.abs(this.velocity.x) > this.maxVelocity.x) {
+		this.velocity.x = this.maxVelocity.x * (this.velocity.x > 0 ? 1 : -1);
+	}
+	this.x += this.velocity.x * dt;
+	if (this.accel.x == 0 && this.velocity.x != 0 && this.drag.x != 0) {
+		if (this.drag.x * dt > Math.abs(this.velocity.x)) {
+			this.velocity.x = 0;
+		}
+		else {
+			this.velocity.x += this.drag.x * dt * (this.velocity.x>0 ? -1 : 1);
+		}
+	}
+
+	this.velocity.y += this.accel.y * dt;
+
+	if (Math.abs(this.velocity.y) > this.maxVelocity.y) {
+		this.velocity.y = this.maxVelocity.y * (this.velocity.y > 0 ? 1 : -1);
+	}
+
+	this.y += this.velocity.y * dt;
+
+	if (this.accel.y == 0 && this.velocity.y != 0 && this.drag.y != 0) {
+		if (this.drag.y * dt > Math.abs(this.velocity.y)) {
+			this.velocity.y = 0;
+		}
+		else {
+			this.velocity.y += this.drag.y * dt * (this.velocity.y>0 ? -1 : 1);
+		}
+	}
+}
+
+baa.entity.resolveCollision = function (e) {
+	if (this.overlaps(e)) {
+		this.onOverlap(e);
+	}
+}
+
+baa.entity.overlaps = function (e) {
+	return this!= e && !this.dead && !e.dead && baa.entity.super.overlaps(this,e);
+}
+
+baa.entity.onOverlap = function (e) {
+	// if (this.solid && e.solid && this.separatePriority != e.separatePriority) {
+	if (this.solid && e.solid) {
+		this.separate(e);
+		return true;
+	} 
+}
+
+baa.entity.separate = function (e) {
+	this.separateAxis(e, this.last.overlapsY(e.last) ? "x" : "y");
+}
+
+baa.entity.separateAxis = function (e, a) {
+	var s = (a == "x") ? "width" : "height";
+	if (this.separatePriority > e.separatePriority) {
+		if ((e.last[a] + e.last[s] / 2) < (this.last[a] + this.last[s] / 2)) {
+			e[a] = this[a] - e[s];
+		}
+		else {
+			e[a] = this[a] + this[s];
+		}
+		e.velocity[a] = e.velocity[a] * -e.bounce[a];
+	}
+	else if (this.separatePriority == e.separatePriority) {
+		print("??");
+		if ((e.last[a] + e.last[s] / 2) < (this.last[a] + this.last[s] / 2)) {
+			e[a] = this[a] - e[s];
+		}
+		else {
+			e[a] = this[a] + this[s];
+		}
+		e.velocity[a] = e.velocity[a] * -e.bounce[a];
+		this.velocity[a] = this.velocity[a] * -this.bounce[a];
+	}
+	else {
+		e.separateAxis(this, a);
+	}
+}
+
+
+
+
+///////////////////////////////
+///////////////////////////////
 
 //Graphics
 baa.graphics = {};
@@ -204,6 +631,8 @@ baa.graphics.color = {r:255,g:255,b:255,a:255};
 baa.graphics.backgroundColor = {r:0,g:0,b:0};
 baa.graphics.pointSize = 1;
 baa.graphics.currentFont;
+baa.graphics.width;
+baa.graphics.height;
 
 baa.graphics.preload = function () {
 	for (var i = 0; i < arguments.length; i++) {
@@ -224,13 +653,13 @@ baa.graphics.preload = function () {
 
 baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 	baa._checkType("mode",mode,"string");
-	baa._checkType("x",x,"number","object");
+	baa._checkType("x",x,"number","baa.rect");
 	baa._checkType("y",y,"number",null);
 	baa._checkType("width",w,"number",null);
 	baa._checkType("height",h,"number",null);
 	baa._checkType("rounding",r,"number",null);
 
-	if (Class.isClass(x) && x.is(baa.rectangle)) {
+	if (Class.isClass(x) && x.is(baa.rect)) {
 		r = y;
 		y = x.y;
 		w = x.width;
@@ -494,7 +923,7 @@ baa.graphics.draw = function (img,quad,x,y,r,sx,sy,ox,oy,kx,ky) {
 }
 
 baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
-	baa._checkType("image",img,"object");
+	baa._checkType("image",img,"baa.graphics.image");
 	baa._checkType("x",x,"number",null);
 	baa._checkType("y",y,"number",null);
 	baa._checkType("r",r,"number",null);
@@ -588,13 +1017,15 @@ baa.graphics.newImage = function (url,smooth) {
 
 baa.graphics._font = Class.extend("baa.graphics.font");
 
-baa.graphics._font.init = function (name,size,height) {
+baa.graphics._font.init = function (name,size,style,height) {
 	baa._checkType("name",name,"string");
 	baa._checkType("size",size,"number");
+	baa._checkType("style",style,"string",null);
 	baa._checkType("height",height,"number",null);
 
 	this.name = name;
 	this.size = size;
+	this.style = style || "normal";
 	this.height = height==null ? size : height;
 }
 
@@ -620,8 +1051,8 @@ baa.graphics._font.getHeight = function () {
 	return this.height;
 }
 
-baa.graphics.newFont = function (name,size,height) {
-	return this._font.new(name,size,height);
+baa.graphics.newFont = function (name,size,style,height) {
+	return this._font.new(name,size,style,height);
 }
 
 
@@ -697,11 +1128,10 @@ baa.graphics.setColor = function (r,g,b,a) {
 		baa._checkType("green",r[1],"number",null);
 		baa._checkType("blue",r[2],"number",null);
 		baa._checkType("alpha",r[3],"number",null);
-
-		this.color.r = r[0] || this.color.r;
-		this.color.g = r[1] || this.color.g;
-		this.color.b = r[2] || this.color.b;
-		this.color.a = r[3] || this.color.a;
+		this.color.r = r[0];
+		this.color.g = r[1];
+		this.color.b = r[2];
+		this.color.a = r[3];
 	}
 	else {
 		baa._checkType("red",r,"number",null);
@@ -723,6 +1153,7 @@ baa.graphics.setColor = function (r,g,b,a) {
 
 baa.graphics.setAlpha = function (a) {
 	baa._checkType("alpha",a,"number");
+
 	this.color.a = Math.min(1,Math.max(0,a));
 	return this.ctx.globalAlpha = a;
 }
@@ -730,7 +1161,6 @@ baa.graphics.setAlpha = function (a) {
 baa.graphics.getAlpha = function () {
 	this.color.a;
 }
-
 
 baa.graphics.setBackgroundColor = function (r,g,b) {
 	if (typeof(r)=="object") {
@@ -755,29 +1185,33 @@ baa.graphics.setBackgroundColor = function (r,g,b) {
 
 baa.graphics.setLineWidth = function (width) {
 	baa._checkType("width",width,"number",null);
+
 	this.ctx.lineWidth = width;
 }
 
-baa.graphics.setNewFont = function (fnt,size) {
-	baa._checkType("font",font,"number",null);
-	fnt = this.newFont(fnt,size);
+baa.graphics.setNewFont = function (fnt,size,style,height) {
+	fnt = this.newFont(fnt,size,style,height);
 	this.setFont(fnt);
 	return fnt;
 }
 
 baa.graphics.setFont = function (fnt) {
-	baa._checkType("font",fnt,"object");
+	baa._checkType("font",fnt,"baa.graphics.font");
+
 	this.currentFont = fnt;
-	this.ctx.font = fnt.size + "pt " + fnt.name;
+	this.ctx.font = fnt.style + " " + fnt.size + "pt " + fnt.name;
+
 }
 
 baa.graphics.setBlendMode = function (mode) {
 	baa._checkType("mode",mode,"string");
+
 	this.ctx.globalCompositeOperation = mode;
 }
 
 baa.graphics.setCanvas = function (cvs) {
-	baa._checkType("canvas",cvs,"object",null);
+	baa._checkType("canvas",cvs,"baa.graphics.canvas",null);
+
 	if (cvs==null) {
 		this.ctx = this.defaultCtx;
 		this.canvas = this.defaultCanvas;
@@ -788,6 +1222,16 @@ baa.graphics.setCanvas = function (cvs) {
 		this.canvas = cvs.drawable;
 		this.currentCanvas = cvs;
 	}
+}
+
+baa.graphics.setScissor = function (x,y,w,h) {
+	this.ctx.rect(x, y, w, h);
+	this.ctx.clip();
+
+}
+
+baa.graphics.removeScissor = function () {
+	this.ctx.clip();
 }
 
 
@@ -879,6 +1323,10 @@ baa.graphics._mode = function (mode) {
 	else if (mode == "line") {
 		this.ctx.stroke();
 	}
+	else if (mode == "both") {
+		this.ctx.fill();
+		this.ctx.stroke();
+	}
 	else {
 		throw new Error("Invalid mode " + mode);
 	}
@@ -926,14 +1374,14 @@ baa.audio.preload = function () {
 //Recorder functions
 
 baa.audio.play = function (source) {
-	baa._checkType("source",source,"object");
+	baa._checkType("source",source,"baa.audio.source");
 	source.audio.play();
 	source.stopped = false;
 	source.playing = true;
 }
 
 baa.audio.stop = function (source) {
-	baa._checkType("source",source,"object");
+	baa._checkType("source",source,"baa.audio.source");
 	source.audio.pause();
 	source.stopped = true;
 	source.playing = false;
@@ -941,18 +1389,18 @@ baa.audio.stop = function (source) {
 }
 
 baa.audio.rewind = function (source) {
-	baa._checkType("source",source,"object");
+	baa._checkType("source",source,"baa.audio.source");
 	source.audio.currentTime = 0;
 }
 
 baa.audio.pause = function (source) {
-	baa._checkType("source",source,"object");
+	baa._checkType("source",source,"baa.audio.source");
 	source.audio.pause();
 	source.playing = false;
 }
 
 baa.audio.resume = function (source) {
-	baa._checkType("source",source,"object");
+	baa._checkType("source",source,"baa.audio.source");
 	if (source.audio.currentTime > 0) {
 		source.audio.play();
 		source.playing = true;
@@ -1124,11 +1572,15 @@ baa.keyboard._constant = {
 };
 
 baa.keyboard._downHandler = function(event) {
+	event.preventDefault();
 	var keyPressed = baa.keyboard._constant[event.keyCode] || String.fromCharCode(event.keyCode).toLowerCase();
 	if (!baa.keyboard._keysDown[keyPressed]) {
 		baa.keyboard._pressed.push(keyPressed);
 		if (baa.keyPressed) {
 			baa.keyPressed(keyPressed);
+		}
+		if (baa.debug) {
+			baa.debug.keypressed(keyPressed,event.keyCode);
 		}
 	}
 	baa.keyboard._keysDown[keyPressed] = true;
@@ -1169,8 +1621,8 @@ baa.keyboard.isPressed = function () {
 baa.keyboard.isReleased = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("key",arguments[i],"string");
-		for (var j = 0; j < this.released.length; j++) {
-			if (arguments[i] == this.released[j]) {
+		for (var j = 0; j < this._released.length; j++) {
+			if (arguments[i] == this._released[j]) {
 				return true;
 			}
 		}
@@ -1180,9 +1632,7 @@ baa.keyboard.isReleased = function () {
 
 //Mouse
 
-baa.mouse = {};
-baa.mouse._x = 0;
-baa.mouse._y = 0;
+baa.mouse = baa.point.new();
 baa.mouse._buttonsDown = [];
 baa.mouse._pressed = [];
 baa.mouse._released = [];
@@ -1195,39 +1645,48 @@ baa.mouse._constant = {
 };
 
 baa.mouse._move = function (event) {
-	baa.mouse._x = event.clientX-9;
-	baa.mouse._y = event.clientY-9;
+	baa.mouse.x = event.clientX-4;
+	baa.mouse.y = event.clientY-9;
 }
 
 baa.mouse._downHandler = function (event) {
 	var mousepressed = baa.mouse._constant[event.button];
-	baa.mouse._buttonsDown[mousepressed] = true;
-	if (baa.mousepressed) {
-		baa.mousepressed(mousepressed,event.clientX,event.clientY);
+	if (!baa.mouse._buttonsDown[mousepressed]) {
+		baa.mouse._pressed.push(mousepressed);
+		if (baa.mousepressed) {
+			baa.mousepressed(mousepressed,event.clientX,event.clientY);
+		}
 	}
+	baa.mouse._buttonsDown[mousepressed] = true;
 }
 
 baa.mouse._upHandler = function (event) {
 	var mousereleased = baa.mouse._constant[event.button];
-	baa.mouse._buttonsDown[mousereleased] = false;
-	if (baa.mouseReleased) {
-		baa.mouseReleased(mousereleased,event.clientX,event.clientY);
+	if (baa.mouse._buttonsDown[mousereleased]) {
+		baa.mouse._released.push(mousereleased);
+		if (baa.mousereleased) {
+			baa.mousereleased(mousereleased,event.clientX,event.clientY);
+		}
 	}
+	baa.mouse._buttonsDown[mousereleased] = false;
 }
 
 baa.mouse._wheelHandler = function (event) {
 	var mousepressed = baa.mouse._constant[event.wheelDelta > 0 ? 4 : 5];
-	if (baa.mousePressed) {
-		baa.mousePressed(mousepressed,event.clientX,event.clientY);
+	if (!baa.mouse._buttonsDown[mousepressed]) {
+		baa.mouse._pressed.push(mousepressed);
+		if (baa.mousepressed) {
+			baa.mousepressed(mousepressed,event.clientX,event.clientY);
+		}
 	}
 }
 
 baa.mouse.getX = function () {
-	return baa.mouse._x;
+	return this.x;
 }
 
 baa.mouse.getY = function () {
-	return baa.mouse._y;
+	return this.y;
 }
 
 baa.mouse.isDown = function () {
@@ -1255,8 +1714,8 @@ baa.mouse.isPressed = function () {
 baa.mouse.isReleased = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("button",arguments[i],"string");
-		for (var j = 0; j < this.released.length; j++) {
-			if (arguments[i] == this.released[j]) {
+		for (var j = 0; j < this._released.length; j++) {
+			if (arguments[i] == this._released[j]) {
 				return true;
 			}
 		}
@@ -1337,12 +1796,16 @@ baa.run = function () {
 				baa.config(conf);
 				baa.graphics.canvas.width = conf.width != null ? conf.width : 800;
 				baa.graphics.canvas.height = conf.height != null ? conf.height : 600;
+				baa.graphics.width = baa.graphics.canvas.width;
+				baa.graphics.height = baa.graphics.canvas.height;
 				baa.filesystem.identity = typeof(conf.identity) == "string" ? conf.identity + "/" : null;
 			}
 			baa.graphics.imageSmoothingEnabled = true;
 			baa.graphics.ctx.strokeStyle = baa.graphics._rgb(255,255,255);
-			baa.graphics.setFont(baa.graphics.newFont("arial",10))
+			baa.graphics.setFont(baa.graphics.newFont("arial",10));
+			
 			baa.load();
+			baa.graphics._background();
 			baa.loop(0);
 			window.cancelAnimFrame(baa.run);
 		}
@@ -1357,9 +1820,11 @@ baa.run = function () {
 
 baa.loop = function (time) {
 	baa.time.dt = (time - baa.time.last) / 1000;
+	dt = (baa.time.dt > 0) ? baa.time.dt : 1/60;
 	if (baa.update) {
-		baa.update((baa.time.dt > 0) ? baa.time.dt : 1/60);
+		baa.update();
 	}
+ 	baa.debug.update();
 	baa.keyboard._pressed = [];
 	baa.keyboard._released = [];
 	baa.mouse._pressed = [];
@@ -1371,14 +1836,17 @@ baa.loop = function (time) {
 
 baa.graphics.drawloop = function (a) {
 	if (baa.draw) {
-		this._clearScreen();
-		this.origin();
+		// this._clearScreen();
 		this.ctx.fillStyle = this._rgb(this.backgroundColor.r,this.backgroundColor.g,this.backgroundColor.b);
+		this.ctx.globalAlpha = 1;
 		this._background();
+		this.ctx.globalAlpha = this.color.a;
 		this.ctx.fillStyle = this._rgb(this.color.r,this.color.g,this.color.b);
 		this.ctx.strokeStyle = this._rgb(this.color.r,this.color.g,this.color.b);
-		this.ctx.globalAlpha = this.color.a/255;
+		this.setFont(this.newFont("arial",10));
 	 	baa.draw();
+		this.origin();
+	 	baa.debug.draw();
 	}
 }
 
@@ -1595,7 +2063,7 @@ baa.group.init = function () {
 }
 
 baa.group.add = function (obj) {
-	if (arguments.length > 0) {
+	if (obj) {
 		if (arguments.length > 1) {
 			for (var i = 0; i < arguments.length; i++) {
 				this[this.length] = arguments[i];
@@ -2022,399 +2490,365 @@ baa.tween.ease = function (p,inout,easing) {
 
 
 
+//Debug
+///////////////////////////////
 
+baa.debug = Class.extend("baa.debug");
 
+baa.debug.font = baa.graphics.newFont("Courier new",12,"bold");
 
+baa.debug._window = baa.rect.extend("baa.debug.window");
 
-//Point
-//////////////////////////////////
+baa.debug._window.init = function (x,y,w,h) {
+	baa.debug._window.super.init(this,x,y,w,h);
 
-baa.point = Class.extend("baa.point");
-
-baa.point.init = function (x,y) {
-	baa._checkType("x",x,"number",null);
-	baa._checkType("y",y,"number",null);
+	this.maxVars = Math.floor(13*(h/200));
+	this.numberOfVars = 0;
 	
-	this.x = x || 0;
-	this.y = y == null ? this.x : y;
-}
+	this.position = 0;
 
-baa.point.set = function (x,y) {
-	baa._checkType("x",x,"number",null);
-	baa._checkType("y",y,"number",null);
+	this.titleBarHeight = 30;
+	this.titleBar = baa.rect.new(x,y-this.titleBarHeight,w,this.titleBarHeight);
 
-	this.x = x || 0;
-	this.y = y == null ? this.x : y;
-}
+	this.title = "Debug Menu";
 
-baa.point.clone = function (p) {
-	baa._checkType("point",p,"object");
+	this.object;
 
-	this.x = p.x;
-	this.y = p.y;
-}
+	this.scrollBarWidth = 14;
 
-//Rectangle
-//////////////////////////////////
-
-baa.rectangle = baa.point.extend("baa.rectangle");
-
-baa.rectangle.init = function (x,y,width,height) {
-	baa.rectangle.super.init(this,x,y);
-	baa._checkType("width",width,"number",null);
-	baa._checkType("height",height,"number",null);
-
-	this.width = width || 0;
-	this.height = height == null ? width : height;
-}
-
-baa.rectangle.set = function (x,y,width,height) {
-	baa.rectangle.super.init(x,y);
-	baa._checkType("width",width,"number",null);
-	baa._checkType("height",height,"number",null);
-
-	this.x = x;
-	this.y = y == null ? this.x : y;
-	this.width = width;
-	this.height = height == null ? width : height;
-}
-
-baa.rectangle.clone = function (r) {
-	baa._checkType("rectangle",r,"object");
-
-	this.x = r.x;
-	this.y = r.y;
-	this.width = r.width;
-	this.height = r.height;
-}
-
-baa.rectangle.left = function (v) {
-	baa._checkType("x",v,"number",null);
-
-	if (v!=null) { this.x = v; }
-	return x;
-}
-
-baa.rectangle.right = function (v) {
-	baa._checkType("x",v,"number",null);
-
-	if (v!=null) { this.x = v - this.width};
-	return this.x + this.width;
-}
-
-baa.rectangle.top = function (v) {
-	baa._checkType("y",v,"number",null);
-
-	if (v!=null) { this.y = v; }
-	return y;
-}
-
-baa.rectangle.bottom = function (v) {
-	baa._checkType("y",v,"number",null);
-
-	if (v!=null) { this.y = v - this.height};
-	return this.y + this.height;
-}
-
-baa.rectangle.xCenter = function (v) {
-	baa._checkType("x",v,"number",null);
-
-	if (v!=null) { this.x = v - this.width/2 };
-	return this.x + this.width/2;
-}
-
-baa.rectangle.yCenter = function (v) {
-	baa._checkType("y",v,"number",null);
-
-	if (v!=null) { this.y = v - this.height/2 };
-	return this.y + this.height/2;
-}
-
-baa.rectangle.draw = function (mode,r) {
-	baa.graphics.rectangle(mode || "fill",this.x,this.y,this.width,this.height,r);
-}
-
-baa.rectangle.overlaps = function (r) {
-	baa._checkType("rectangle",r,"object");
-
-	return this.x + this.width > r.x && this.x < r.x + r.width
-		&& this.y + this.height > r.y && this.y < r.y + r.height;
-}
-
-baa.rectangle.overlapsX = function (r) {
-	baa._checkType("rectangle",r,"object");
-
-	return this.x + this.width > r.x && this.x < r.x + r.width;
-}
-
-baa.rectangle.overlapsY = function (r) {
-	baa._checkType("rectangle",r,"object");
-
-	return this.y + this.height > r.x && this.y < r.y + r.height;
-}
-
-
-//Sprite
-//////////////////////////////
-
-baa.sprite = baa.rectangle.extend("baa.sprite");
-
-baa.sprite.init = function (x,y) {
-	baa.sprite.super.init(this,x,y);
-	this.origin = baa.rectangle.new(0,0);
-	this.image;
-	this.frames = [];
-	this.animations = {}
-	this.frameTimer = 1;
-	this.frameTimerDir = 1;
-	this.currentFrame = 1;
-	this.currentAnim = "idle";
+	this.scrollbarBG = baa.rect.new(x+w,y,this.scrollBarWidth,h);
+	this.scrollbar = baa.rect.new(x+w+3,y+5,9,h-10);
 	
-	this.animPlaying = true;
-	this.animEnded = false;
+	this.selector = baa.rect.new(0,0,w,15);
+	this.selectorMargin = y % 15;
+	this.hover;
+	this.selected;
+	this.prevSelected;
+	this.selectedType;
+
+	this.blinkTimer = 0;
+
+	this.tempValue = "";
+
+	this.keys = [];
+
+	this.path = [];
+
+	this.moving = false;
+
+	this.mouseMargin = baa.point.new();
 }
 
-baa.sprite.update = function () {
-	this.animate()
-}
+baa.debug._window.update = function () {
 
-baa.sprite.draw = function () {
-	if (this.image) {
-		this.image.draw(this.frames[this.currentFrame-1],this.x,this.y)
+	this.blinkTimer+= dt;
+
+	if (this.blinkTimer > 1) {
+		this.blinkTimer = 0;
 	}
-}
 
-baa.sprite.centerOrigin = function () {
-	this.origin.x = this.width/2;
-	this.origin.y = this.height/2;
-}
+	this.selector.x = this.x;
+	this.hover = Math.floor((baa.mouse.getY() - this.y)/15);
 
-baa.sprite.setImage = function (url,width,height,smooth) {
-	this.image = baa.graphics.newImage(url,smooth);
-	this.width = width || this.image.getWidth();
-	this.height = height || this.image.getHeight();
-	this.frames = [];
-	for (var i=0; i < this.image.getHeight()/this.height; i++) {
-		for (var j=0; j < this.image.getWidth()/this.width; j++) {
-			this.frames.push({x:j*this.width,y:i*this.height,width:this.width,height:this.height});
-		}
-	}
-	this.centerOrigin();
-}
-
-baa.sprite.addAnimation = function (name,start,finish,speed,mode,semi) {
-	this.animations[name] = {};
-	var obj = this.animations[name];
-	obj.start = start;
-	obj.finish = finish;
-	obj.speed = speed || 15;
-	obj.mode = mode || "loop";
-	if (semi==null) {
-		obj.semi = start;
-	}
-	else {
-		this.animations[name].hasSemi = true;
-		this.animations[name].semi = semi;
-	}
-		
-}
-
-baa.sprite.setAnimation = function (anim) {
-	if (this.currentAnim != anim) {
-		this.currentAnim = anim;
-		this.animEnded = false;
-		this.currentAnim = this.anim;
-		this.frameTimer = this.anims[this.anim].start;
-		this.frameTimerDir = this.anims[this.anim].direction;
-	}
-}
-
-baa.sprite.animate = function () {
-	if (this.animPlaying) {
-		if (this.animations.hasOwnProperty(this.currentAnim)) {
-			var anim = this.animations[this.currentAnim];
-			if (anim.start == anim.finish) {
-				this.frameTimer = anim.start;
-				this.frame = this.frameTimer;
-				return;
+	if (this.overlaps(baa.mouse)) {
+		if (baa.keyboard.isDown("shift")) {
+			if (baa.mouse.isPressed("wu")) {
+				this.position = Math.max(0,this.position - 3);
 			}
-			if (typeof(anim.speed) == "number") {
-				this.frameTimer += dt * anim.speed * this.frameTimerDir;
+			else if (baa.mouse.isPressed("wd")) {
+				this.position = Math.min(this.numberOfVars-this.maxVars,this.position + 3);
 			}
-			else {
-				this.frameTimer += dt * anim.speed[this.frame] * this.frameTimerDir;
-			}
-			if (this.frameTimer > anim.finish+1 || this.frameTimer < anim.start) {
-				if (anim.mode == "loop") {
-					this.frameTimer = anim.semi;
-					if (anim.hasSemi) {
-						this.animEnded = true;
+			else if (baa.mouse.isPressed("l")) {
+				if (this.path.length > 0 && this.hover == 0 && this.position == 0) {
+					this.setObject(this.path[this.path.length-1]);
+					this.path.pop();
+				}
+				else {
+					var key = this.keys[this.hover + this.position - (this.path.length > 0 ? 1 : 0)];
+					if (key == this.selected) {
+						this.tempValue = "";
+					}
+					else {
+						this.selectedType = typeof(this.object[key]);
+						if (this.selectedType == "boolean") {
+							this.object[key] = !this.object[key];
+						}
+						else if (this.selectedType == "number" || this.selectedType == "string") {
+							this.selected = key;
+							this.tempValue = this.object[this.selected].toString();
+						}
+						else if (this.selectedType == "object") {
+							this.path.push(this.object);
+							this.setObject(this.object[key]);
+						}
 					}
 				}
-				else if (anim.mode == "once") {
-					this.frameTimer = anim.finish;
-					this.animPlaying = false;
-					this.animEnded = true;
+			}
+		}
+		this.selector.y = (this.y + this.hover*15);
+	}
+
+	if (this.titleBar.overlaps(baa.mouse)) {
+		if (baa.mouse.isPressed("l")) {
+			this.mouseMargin.x = baa.mouse.getX() - this.titleBar.x;
+			this.mouseMargin.y = baa.mouse.getY() - this.titleBar.y;
+			this.moving = true;
+		}
+	}
+
+	if (baa.mouse.isReleased("l")) {
+		this.moving = false;
+	}
+
+	if (this.moving) {
+		this.move();
+	}
+
+	this.scrollbar.y = this.y + (this.position * (this.height/(this.numberOfVars)))+2;
+
+	if (baa.keyboard.isDown("down")) {
+		this.height += 500 * dt;
+		this.maxVars = Math.floor(13*(this.height/200));
+		this.scrollbarBG.height = this.height;
+		this.scrollbar.height = (12/this.numberOfVars) * this.height;
+
+	}
+	if (baa.keyboard.isDown("up")) {
+		this.height -= 500 * dt;
+		this.maxVars = Math.floor(13*(this.height/200));
+		this.scrollbarBG.height = this.height;
+		this.scrollbar.height = (12/this.numberOfVars) * this.height;
+	}
+	if (baa.keyboard.isDown("right")) {
+		this.width += 500 * dt;
+		this.selector.width += 500 * dt;
+		this.titleBar.width += 500 * dt;
+		this.scrollbarBG.x = this.x + this.width;
+		this.scrollbar.x = this.scrollbarBG.x + 3;
+	}
+	if (baa.keyboard.isDown("left")) {
+		this.width -= 500 * dt;
+		this.selector.width -= 500 * dt;
+		this.titleBar.width -= 500 * dt;
+		this.scrollbarBG.x = this.x + this.width;
+		this.scrollbar.x = this.scrollbarBG.x + 3;
+	}
+
+
+}
+
+baa.debug._window.draw = function () {
+	baa.graphics.setColor(0,0,0);
+	baa.debug._window.super.draw(this,"fill");
+	baa.graphics.setLineWidth(2);
+	baa.graphics.setColor(200,200,200);
+	baa.debug._window.super.draw(this,"line");
+	
+	//Scrollbar
+	if (this.numberOfVars > this.maxVars) {
+		this.scrollbarBG.draw("fill");
+		baa.graphics.setColor(0,0,0);
+		this.scrollbar.draw("fill");
+	}
+	
+	//Title
+	baa.graphics.setColor(0,0,0);
+	this.titleBar.draw("fill");
+	baa.graphics.setColor(200,200,200);
+	this.titleBar.draw("line");
+
+	baa.graphics.setColor(255,255,255)
+	baa.graphics.setFont(baa.debug.font);
+	baa.graphics.print(this.title,"center",1000,this.titleBar.x+this.titleBar.width/2,this.titleBar.y+7)
+	
+	if (this.overlaps(baa.mouse)) {
+		baa.graphics.setColor(150,150,150);
+		this.selector.draw();
+	}
+
+	var i = 0;
+	var j = 0;
+	var obj;
+	var str = "";
+	var mkey;
+	for (var key in this.object) {
+		obj = this.object[key];
+
+		if (this.position == 0 && j == 0 && this.path.length > 0) {
+			baa.graphics.setColor(255,255,255)
+			baa.graphics.print("<- back",this.x,this.y)
+			j++;
+		}
+		
+		if (typeof(obj)!="function" && key.charAt(0)!="_") {
+
+			if (i >= this.position && j < this.maxVars) {
+
+				mkey = key.substring(0,18);
+				if (key.length == 19) {
+					mkey = key;
 				}
-				else if (anim.mode == "pingpong") {
-					this.frameTimer = this.frameTimeDir > 0 ? anim.finish : anim.start;
-					this.frameTimerDir = -this.frameTimerDir;
+				else if (key.length > 19) {
+					mkey = mkey + "~"
+				}
+
+
+				if (typeof(obj) == "object") {
+					if (Class.isClass(obj)) {
+						baa.graphics.setColor(255,200,200);
+						str = mkey + ": " + obj.type();
+					}
+					else {
+						if (Array.isArray(obj)) {
+							baa.graphics.setColor(255,255,200);
+							str = mkey + ": array(" + obj.length + ")";
+						}
+						else {
+							baa.graphics.setColor(200,255,200);
+							str = mkey + ": object";
+						}
+					}
+				}
+				else {
+					if (typeof(obj) == "string") {
+						baa.graphics.setColor(200,255,200);
+						if (key == this.selected) {
+							str = mkey + ": " + '"' + (this.tempValue||"") + (this.blinkTimer > 0.5 ? "|" : " ") + '"';
+						}
+						else {
+							str = mkey + ": " + '"' + obj + '"';
+						}
+					}
+					else {
+						baa.graphics.setColor(255,255,255);
+						if (key == this.selected) {
+							str = mkey + ": " + (this.tempValue||"") + (this.blinkTimer > 0.5 ? "|" : "");
+						}
+						else {
+							str = mkey + ": " + obj;
+						}
+					}
+				}
+				baa.graphics.print(str,this.x+5,this.y+2+15*j);
+				j++;
+			}
+			i++;
+		}
+	}
+}
+
+baa.debug._window.setObject = function (v) {
+	this.object = v;
+	this.numberOfVars = 0;
+	this.keys = [];
+	this.selected = null;
+	this.position = 0;
+	for (var key in this.object) {
+		if (typeof(this.object[key]) !="function" && key.charAt(0)!="_") {
+			this.numberOfVars++;
+			this.keys.push(key);
+		}
+	}
+	this.scrollbar.height = (12/this.numberOfVars) * this.height;
+}
+
+baa.debug._window.move = function () {
+	this.x = baa.mouse.getX() - this.mouseMargin.x; 
+	this.y = baa.mouse.getY() + this.titleBarHeight - this.mouseMargin.y;
+	this.titleBar.x = this.x;
+	this.titleBar.y = this.y-this.titleBarHeight;
+
+	this.scrollbarBG.x = this.x+this.width;
+	this.scrollbarBG.y = this.y;
+
+	this.scrollbar.x = this.scrollbarBG.x + 3;
+	this.scrollbar.y = this.y + 5;
+}
+
+baa.debug._window.keyPressed = function (key,keycode) {
+	if (this.selected) {
+		if (key == "backspace") {
+			this.tempValue = this.tempValue.substring(0,this.tempValue.length-1);
+		}
+		else if (key == "return") {
+			if (this.selectedType == "number") {
+				this.object[this.selected] = parseFloat(this.tempValue) || 0;
+			}
+			else {
+				this.object[this.selected] = this.tempValue;
+			}
+			this.prevSelected = this.selected;
+			this.selected = null;
+		}
+		else if (key == "escape") {
+			this.prevSelected = this.selected;
+			this.selected = null;
+		}
+		else {
+			if (this.selectedType == "number") {
+				if (keycode >= 48 && keycode <= 57) {
+					this.tempValue = this.tempValue + key;
 				}
 			}
-			this.currentFrame = Math.floor(this.frameTimer);
+			else {
+				if ((keycode >= 48 && keycode <= 57) || (keycode >= 65 && keycode <= 90) || key == " ") {
+					this.tempValue = this.tempValue + key;
+				}
+			}
 		}
-	}
-}
-
-baa.sprite.playAnimation = function () {
-	this.animPlaying = true;
-}
-
-baa.sprite.pauseAnimation = function () {
-	this.animPlaying = false;
-}
-
-baa.sprite.stopAnimation = function () {
-	this.animPlaying = false;
-	this.setFrame(1);
-	this.animEnded = false;
-}
-
-baa.sprite.replayAnimation = function () {
-	this.animPlaying = true;
-	this.setFrame(1);
-	this.animEnded = false;
-}
-
-baa.sprite.hasAnimationEnded = function () {
-	return this.animEnded;
-}
-
-baa.sprite.isAnimationPlaying = function () {
-	return this.animPlaying;
-}
-
-baa.sprite.getAnimationFrame = function () {
-	return this.frame - this.anims[this.currentAnim].start+1;
-}
-
-baa.sprite.setAnimationFrame = function (f) {
-	var anim = this.animations[this.currentAnim];
-	if (anim.finish - anim.start < f) {
-		throw("There are only " + anim.finish - anim.start + " frames. Not " + f);
-	}
-	this.frame = anim.start + f;
-	this.frameTimer = this.frame;
-}
-
-
-//Entity
-//////////////////////////////
-
-baa.entity = baa.sprite.extend("baa.entity");
-
-baa.entity.init = function (x,y,w,h) {
-	baa.entity.super.init(this,x,y,w,h);
-	this.last = baa.rectangle.new(x,y,w,h);
-	this.velocity = baa.point.new();
-	this.maxVelocity = baa.point.new(99999,99999);
-	this.accel = baa.point.new();
-	this.drag = baa.point.new();
-	this.bounce = baa.point.new();
-
-	this.separatePriority = 0;
-	this.solid = true;
-
-	this.offset = baa.point.new();
-	this.scale = baa.point.new(1,1);
-	this.alpha = 1;
-	this.flip = false;
-
-	this.once = baa.once.new(this);
-}
-
-baa.entity.update = function () {
-	baa.entity.super.update(this);
-	this.updateMovement();
-}
-
-baa.entity.updateMovement = function () {
-	this.last.clone(this);
-
-	this.velocity.x += this.accel.x * dt;
-	if (Math.abs(this.velocity.x) > this.maxVelocity.x) {
-		this.velocity.x = this.maxVelocity.x * (this.velocity.x > 0 ? 1 : -1);
-	}
-	this.x += this.velocity.x * dt;
-	if (this.accel.x == 0 && this.velocity.x != 0 && this.drag.x != 0) {
-		if (this.drag.x * dt > Math.abs(this.velocity.x)) {
-			this.velocity.x = 0;
-		}
-		else {
-			this.velocity.x += this.drag.x * dt * (this.velocity.x>0 ? -1 : 1);
-		}
-	}
-
-	this.velocity.y += this.accel.y * dt;
-
-	if (Math.abs(this.velocity.y) > this.maxVelocity.y) {
-		this.velocity.y = this.maxVelocity.y * (this.velocity.y > 0 ? 1 : -1);
-	}
-
-	this.y += this.velocity.y * dt;
-
-	if (this.accel.y == 0 && this.velocity.y != 0 && this.drag.y != 0) {
-		if (this.drag.y * dt > Math.abs(this.velocity.y)) {
-			this.velocity.y = 0;
-		}
-		else {
-			this.velocity.y += this.drag.y * dt * (this.velocity.y>0 ? -1 : 1);
-		}
-	}
-}
-
-baa.entity.resolveCollision = function (e) {
-	if (this.overlaps(e)) {
-		this.onOverlap(e);
-	}
-}
-
-baa.entity.overlaps = function (e) {
-	return this!= e && !this.dead && !e.dead && baa.entity.super.overlaps(this,e);
-}
-
-baa.entity.onOverlap = function (e) {
-	if (this.solid && e.solid && this.separatePriority != e.separatePriority) {
-		this.separate(e);
-		return true;
-	} 
-}
-
-baa.entity.separate = function (e) {
-	this.separateAxis(e, this.last.overlapsY(e.last) ? "x" : "y");
-}
-
-baa.entity.separateAxis = function (e, a) {
-	var s = (a == "x") ? "width" : "height";
-	if (this.separatePriority >= e.separatePriority) {
-		if ((e.last[a] + e.last[s] / 2) < (this.last[a] + this.last[s] / 2)) {
-			e[a] = this[a] - e[s];
-		}
-		else {
-			e[a] = this[a] + this[s];
-		}
-		e.velocity[a] = e.velocity[a] * -e.bounce[a];
 	}
 	else {
-		e.separateAxis(this, a);
+		if (baa.keyboard.isPressed("return")) {
+			if (this.prevSelected) {
+				this.selected = this.prevSelected;
+			}
+		}
 	}
 }
 
+baa.debug.active = false;
 
+baa.debug.update = function () {
+	if (this.active) {
+		baa.debug.windows.update();
+	}
+}
+
+baa.debug.draw = function () {
+	if (this.active) {
+		baa.debug.windows.draw();
+	}
+}
+
+baa.debug.set = function (v) {
+	this.windows[0].setObject(v);
+	
+}
+
+baa.debug.keypressed = function (key,u) {
+	if (key == " ") {
+		if (baa.keyboard.isDown("shift")) {
+			this.active = !this.active;
+		}
+	}
+	if (this.active) {
+		this.windows.keyPressed(key,u);
+	}
+}
+
+baa.debug.windows = baa.group.new(baa.debug._window.new(100,107,300,200));
+
+//TODO
+//Make windows contain objects.
+//Er is een main window, en door in het main window op variables te klikken
+//met middle mouse knop open je een nieuw window.
+//Het main window moet 'game' bevatten.
 
 
 //todo
-//debug
+//Put stuff from Entity to sprite (Done)
+
+//debug (DONE)
 //timer (DONE)
 //tween (DONE)
 //Make a fucking game!!
