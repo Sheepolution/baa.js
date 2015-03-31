@@ -36,10 +36,6 @@ printf = function () {
 	console.log(arguments);
 }
 
-error = function (err) {
-	throw new Error(err);
-}
-
 //////////////
 ///CLASSIST///
 //////////////
@@ -47,11 +43,11 @@ error = function (err) {
 Class = {};
 
 Class._names = ["Class"];
-Class._isClass_ = true;
+Class._isClass = true;
 
 Class.extend = function (name) {
 	if (typeof(name) != "string") {
-		name = null;
+		throw("Error: Missing argument name in Class.extend");
 	}
 	var temp = {};
 	var supr = {};
@@ -68,14 +64,14 @@ Class.extend = function (name) {
 
 
 Class.new = function () {
-	// print(this.__clone)
 	var self = this.__clone(this);
-	// self.__clone = null;
-	// delete self.isClass;
+
 	if (!self.init) {
-		throw(this._names[this._names.length-1] + " has no constructor");
+		throw(this.type() + " has no constructor");
 	}
+
 	self.init.apply(self,arguments);
+	
 	return self;
 }
 
@@ -101,7 +97,7 @@ Class.is = function (obj) {
 
 
 Class.type = function () {
-	if (this._names[this._names.length-1].length == 0) {
+	if (this._names[this._names.length-1].length == null) {
 		throw("Add a type name! class:extend([TYPE])");
 	}
 	return this._names[this._names.length-1];
@@ -113,6 +109,7 @@ Class.__clone = function(obj,supr) {
 			var args = Array.prototype.slice.call(arguments);
 			var _this = args[0];
 			args.splice(0,1);
+			// _this.__superWasCalled = true;
 			return obj.apply(_this,args);
 		}
 		return _super;
@@ -126,7 +123,7 @@ Class.__clone = function(obj,supr) {
 	var temp = obj.constructor();
 	for(var key in obj) {
 		if (key == "super") { continue; }
-		if (key == "__clone" || key == "isClass") { continue; }
+		if (key == "__clone" || key == "isClass" || key == "new") { continue; }
 		temp[key] = this.__clone(obj[key],supr);
 	}
 	return temp;
@@ -134,7 +131,7 @@ Class.__clone = function(obj,supr) {
 
 Class.isClass = function (c) {
 	if (c!=null) {
-		if (c["_isClass_"]) {
+		if (c["_isClass"]) {
 			return true;
 		}
 	}
@@ -188,6 +185,16 @@ baa._checkType = function () {
 	throw("Wrong type '" + type + "' for " + name + ". Correct types: " + str);
 }
 
+// //Turns "images/player.png" into "player"
+// baa._delDir = function (name) {
+// 	var newName;
+// 	name = name.substring(0, name.length - name.lastIndexOf(".") + 3);
+// 	print(name);
+
+
+// 	return newName
+// }
+
 baa._assetsLoaded = 0;
 baa._assetsToBeLoaded = 0;
 
@@ -240,7 +247,7 @@ baa.point.overlaps = function (r) {
 		&& r.y + r.height > this.y && r.y < this.y;
 }
 
-//rect
+//Rect
 //////////////////////////////////
 
 baa.rect = baa.point.extend("baa.rect");
@@ -378,6 +385,7 @@ baa.sprite.draw = function () {
 		this.image.draw(this.frames[this.currentFrame-1],
 		this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
 		this.rotation,this.scale.x,this.scale.y,this.origin.x,this.origin.y)
+		baa.graphics.setAlpha(1);
 	}
 }
 
@@ -519,8 +527,10 @@ baa.entity.init = function (x,y,w,h) {
 	this.drag = baa.point.new();
 	this.bounce = baa.point.new();
 
+
 	this.separatePriority = 0;
 	this.solid = true;
+	this.dead = false;
 
 	this.once = baa.once.new(this);
 }
@@ -528,6 +538,25 @@ baa.entity.init = function (x,y,w,h) {
 baa.entity.update = function () {
 	baa.entity.super.update(this);
 	this.updateMovement();
+}
+
+baa.entity.draw = function () {
+	baa.entity.super.draw(this);
+	if (baa.debug && baa.debug.active) {
+		this.drawDebug();
+	}
+
+}
+
+baa.entity.drawDebug = function () {
+	baa.graphics.setAlpha(0.5);
+	baa.graphics.setColor(100,255,0);
+	baa.graphics.setLineWidth(0.5);
+	baa.graphics.rectangle("line",this.last.x,this.last.y,this.last.width,this.last.height);
+
+	baa.graphics.setAlpha(1);
+	baa.graphics.setColor(255,0,0);
+	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height);
 }
 
 baa.entity.updateMovement = function () {
@@ -589,7 +618,7 @@ baa.entity.separate = function (e) {
 
 baa.entity.separateAxis = function (e, a) {
 	var s = (a == "x") ? "width" : "height";
-	if (this.separatePriority > e.separatePriority) {
+	if (this.separatePriority >= e.separatePriority) {
 		if ((e.last[a] + e.last[s] / 2) < (this.last[a] + this.last[s] / 2)) {
 			e[a] = this[a] - e[s];
 		}
@@ -597,17 +626,6 @@ baa.entity.separateAxis = function (e, a) {
 			e[a] = this[a] + this[s];
 		}
 		e.velocity[a] = e.velocity[a] * -e.bounce[a];
-	}
-	else if (this.separatePriority == e.separatePriority) {
-		print("??");
-		if ((e.last[a] + e.last[s] / 2) < (this.last[a] + this.last[s] / 2)) {
-			e[a] = this[a] - e[s];
-		}
-		else {
-			e[a] = this[a] + this[s];
-		}
-		e.velocity[a] = e.velocity[a] * -e.bounce[a];
-		this.velocity[a] = this.velocity[a] * -this.bounce[a];
 	}
 	else {
 		e.separateAxis(this, a);
@@ -635,14 +653,15 @@ baa.graphics.width;
 baa.graphics.height;
 
 baa.graphics.preload = function () {
-	for (var i = 0; i < arguments.length; i++) {
+	var ext = "." + arguments[0];
+	for (var i = 1; i < arguments.length; i++) {
 		var name = arguments[i];
 		var img;
 		img = new Image();
 		img.onload = function(){
 			baa._assetsLoaded++;
 		}
-		img.src = name;
+		img.src = "images/" + name + ext;
 		this._images[name] = img;
 		baa._assetsToBeLoaded++;
 		
@@ -953,7 +972,7 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	this.ctx.imageSmoothingEnabled = img.smooth;
 	this.ctx.mozImageSmoothingEnabled = img.smooth;
 	this.ctx.oImageSmoothingEnabled = img.smooth;;
-	this.ctx.webkitImageSmoothingEnabled = img.smooth;
+	// this.ctx.webkitImageSmoothingEnabled = img.smooth;
 	this.ctx.save();
 	this.ctx.transform(1,ky,kx,1,0,0);
 	this.ctx.translate(x,y);
@@ -1026,7 +1045,7 @@ baa.graphics._font.init = function (name,size,style,height) {
 	this.name = name;
 	this.size = size;
 	this.style = style || "normal";
-	this.height = height==null ? size : height;
+	this.height = height==null ? size*2 : height;
 }
 
 baa.graphics._font.setSize = function (size) {
@@ -1354,7 +1373,7 @@ baa.graphics._resetFont = function () {
 
 baa.audio = {};
 baa.audio.sources = {};
-baa.masterVolume = 1;
+baa.audio.masterVolume = 1;
 
 baa.audio.preload = function () {
 	for (var i = 0; i < arguments.length; i++) {
@@ -1407,21 +1426,30 @@ baa.audio.resume = function (source) {
 	}
 }
 
+baa.audio.setVolume = function (volume) {
+	baa._checkType("volume",volume,"number");
+	this.masterVolume = volume;
+}
+
+
 //New functions
 
 baa.audio._source = Class.extend("baa.audio.source");
 
 baa.audio._source.init = function (url) {
 	baa._checkType("url",url,"string");
-	this.audio = this.sources[url];
+	this.audio = baa.audio.sources[url];
 	this.stopped = false;
-	this.animPlaying = false;
+	this.playing = false;
 }
 
 baa.audio._source.play = function () {
+	var oVol = this.audio.volume;
+	this.audio.volume *= baa.audio.masterVolume;
 	this.audio.play();
 	this.stopped = false;
-	this.animPlaying = true;
+	this.playing = true;
+	this.audio.volume = oVol;
 }
 
 baa.audio._source.stop = function () {
@@ -1432,13 +1460,13 @@ baa.audio._source.stop = function () {
 
 baa.audio._source.pause = function () {
 	this.audio.pause();
-	this.audio.playing = false;
+	this.playing = false;
 }
 
 baa.audio._source.resume = function () {
 	if (this.audio.currentTime>0) {
 		this.audio.play();
-		this.animPlaying = true;
+		this.playing = true;
 	}
 }
 
@@ -1465,7 +1493,7 @@ baa.audio._source.setLooping = function (loop) {
 }
 
 baa.audio._source.isPlaying = function () {
-	return this.audio.playing;
+	return this.playing;
 }
 
 baa.audio._source.isPaused = function () {
@@ -1799,6 +1827,10 @@ baa.run = function () {
 				baa.graphics.width = baa.graphics.canvas.width;
 				baa.graphics.height = baa.graphics.canvas.height;
 				baa.filesystem.identity = typeof(conf.identity) == "string" ? conf.identity + "/" : null;
+				if (conf.release) {
+					baa.debug = null;
+					baa.typesafe = false;
+				}
 			}
 			baa.graphics.imageSmoothingEnabled = true;
 			baa.graphics.ctx.strokeStyle = baa.graphics._rgb(255,255,255);
@@ -1824,7 +1856,9 @@ baa.loop = function (time) {
 	if (baa.update) {
 		baa.update();
 	}
- 	baa.debug.update();
+	if (baa.debug) {
+	 	baa.debug.update();
+	}
 	baa.keyboard._pressed = [];
 	baa.keyboard._released = [];
 	baa.mouse._pressed = [];
@@ -1846,7 +1880,9 @@ baa.graphics.drawloop = function (a) {
 		this.setFont(this.newFont("arial",10));
 	 	baa.draw();
 		this.origin();
-	 	baa.debug.draw();
+		if (baa.debug) {
+		 	baa.debug.draw();
+		}
 	}
 }
 
@@ -1895,23 +1931,25 @@ baa.once.back = function (f,nf,args) {
 // Class //
 ////////////
 
-baa.class = Class.extend();
+// baa.class = Class.extend("baa.class");
 
-baa.class.init = function () {
-	this.once = baa.Once.new();
-}
+// baa.class.init = function () {
+// 	this.once = baa.Once.new();
+// }
 
 ///////////
 // Utils //
 ///////////
 
-baa.utils = {};
+baa.util = {};
 
-baa.utils.sign = function (a) {
+baa.util.TAU = Math.PI*2;
+
+baa.util.sign = function (a) {
 	return a >= 0 ? 1 : -1;
 }
 
-baa.utils.any = function (arr,f) {
+baa.util.any = function (arr,f) {
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (f(arr[i])) {
@@ -1933,7 +1971,7 @@ baa.utils.any = function (arr,f) {
 	return false;
 }
 
-baa.utils.all = function (arr,f) {
+baa.util.all = function (arr,f) {
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (!f(arr[i])) {
@@ -1958,7 +1996,7 @@ baa.utils.all = function (arr,f) {
 	return true;
 }
 
-baa.utils.find = function (arr,f) {
+baa.util.find = function (arr,f) {
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (f(arr[i])) {
@@ -1980,7 +2018,7 @@ baa.utils.find = function (arr,f) {
 	return null;
 }
 
-baa.utils.has = function () {
+baa.util.has = function () {
 	var arr = arguments[0];
 	f = Array.prototype.slice.call(arguments);
 	f.splice(0,1);
@@ -1998,7 +2036,7 @@ baa.utils.has = function () {
 	return true
 }
 
-baa.utils.count = function (arr,f) {
+baa.util.count = function (arr,f) {
 	var c = 0;
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
@@ -2022,15 +2060,11 @@ baa.utils.count = function (arr,f) {
 }
 
 
-baa.utils.clamp = function (a,min,max) {
+baa.util.clamp = function (a,min,max) {
 	return Math.min(max,Math.max(min,a));
 }
 
-baa.utils.Tau = function () {
-	return Math.PI*2;
-}
-
-baa.utils.getAngle = function (a,b,c,d) {
+baa.util.getAngle = function (a,b,c,d) {
 	if (!c) {
 		return Math.atan2(b.y - a.y,b.x - a.x);
 	}
@@ -2039,13 +2073,17 @@ baa.utils.getAngle = function (a,b,c,d) {
 	}
 }
 
-baa.utils.random = function (s,e,d) {
+baa.util.random = function (s,e,d) {
 	if (e==null) {
 		return Math.floor(Math.random()*s);
 	}
 	else {
 		return s+Math.floor(Math.random()*(e-s+1));
 	}
+}
+
+baa.util.choose = function (arr) {
+	return arr[Math.floor(Math.random()*arr.length)];
 }
 
 
@@ -2055,7 +2093,10 @@ baa.utils.random = function (s,e,d) {
 
 baa.group = Class.extend("baa.group");
 
-baa.group.others = "__GroupOthers__";
+//Use .other if you want obj A to apply to obj B and vise versa
+//Use .one if you want obj B to apply to obj A only if obj A applied to obj B returns false
+baa.group.other = "__GroupOthers";
+baa.group.one = "_GroupOne";
 
 baa.group.init = function () {
 	this.length = 0;
@@ -2068,6 +2109,7 @@ baa.group.add = function (obj) {
 			for (var i = 0; i < arguments.length; i++) {
 				this[this.length] = arguments[i];
 				this.length++;
+				// print(arguments[i].type());
 				for (key in arguments[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(arguments[i][key]) == "function") {
@@ -2079,7 +2121,6 @@ baa.group.add = function (obj) {
 		}
 		else if (Class.isClass(obj) && obj.is(baa.group)) {
 			for (var i=0; i < obj.length; i++) {
-				print(obj[i],"obj")
 				this[this.length] = obj[i];
 				this.length++;
 				for (key in obj[i]) {
@@ -2106,6 +2147,31 @@ baa.group.add = function (obj) {
 }
 
 baa.group.remove = function (obj) {
+	if (obj == null) { return false; }
+	var dead;
+	if (typeof(obj) == "object") {
+		for (var i=0; i < this.length; i++) {
+			if (this[i] == obj) {
+				dead = i;
+				break;
+			}
+		}
+		// print("dead");
+		this[dead] = null;
+	}
+	else {
+		this[obj] = null;
+		dead = obj;
+	}
+	for (var i = dead+1; i < this.length; i++) {
+		this[i-1] = this[i];
+	}
+	this.length--;
+	this[this.length] = null;
+	// print(this.length)
+}
+
+baa.group.remove = function (obj) {
 	var dead;
 	if (typeof(obj) == "object") {
 		for (var i=0; i < this.length; i++) {
@@ -2127,24 +2193,20 @@ baa.group.remove = function (obj) {
 	this[this.length] = null;
 }
 
-
 baa.group.makeFunc = function (k) {
 	this[k] = function () {
-		if (arguments[0] == baa.group.others) {
+		var other = arguments[0]
+		if (other == baa.group.other || other == baa.group.one) {
 			for (var i=0; i < this.length-1; i++) {
 				for (var j=i; j < this.length; j++) {
 					if (i!=j) {
 						if (this[i].hasOwnProperty(k) && this[j].hasOwnProperty(k)) {
 							arguments[0] = this[j];
 							var a = this[i][k].apply(this[i],arguments);
-							if (a) {
-								break;
+							if (other == baa.group.one) {
+								continue;
 							}
-							arguments[0] = this[i];
 							var b = this[j][k].apply(this[j],arguments);
-							if (b) {
-								break;
-							}
 						}
 					}
 				}
@@ -2209,6 +2271,16 @@ baa.group.find = function (f) {
 		}
 	}
 	return null;
+}
+
+baa.group.prepare = function (obj) {
+	for (key in obj) {
+		if (!this.hasOwnProperty(key)) {
+			if (typeof(obj[key]) == "function") {
+				this.makeFunc(key);
+			}
+		}
+	}
 }
 
 
@@ -2605,35 +2677,35 @@ baa.debug._window.update = function () {
 	}
 
 	this.scrollbar.y = this.y + (this.position * (this.height/(this.numberOfVars)))+2;
+	if (baa.keyboard.isDown("shift")) {
+		if (baa.keyboard.isDown("down")) {
+			this.height += 500 * dt;
+			this.maxVars = Math.floor(13*(this.height/200));
+			this.scrollbarBG.height = this.height;
+			this.scrollbar.height = (12/this.numberOfVars) * this.height;
 
-	if (baa.keyboard.isDown("down")) {
-		this.height += 500 * dt;
-		this.maxVars = Math.floor(13*(this.height/200));
-		this.scrollbarBG.height = this.height;
-		this.scrollbar.height = (12/this.numberOfVars) * this.height;
-
+		}
+		if (baa.keyboard.isDown("up")) {
+			this.height -= 500 * dt;
+			this.maxVars = Math.floor(13*(this.height/200));
+			this.scrollbarBG.height = this.height;
+			this.scrollbar.height = (12/this.numberOfVars) * this.height;
+		}
+		if (baa.keyboard.isDown("right")) {
+			this.width += 500 * dt;
+			this.selector.width += 500 * dt;
+			this.titleBar.width += 500 * dt;
+			this.scrollbarBG.x = this.x + this.width;
+			this.scrollbar.x = this.scrollbarBG.x + 3;
+		}
+		if (baa.keyboard.isDown("left")) {
+			this.width -= 500 * dt;
+			this.selector.width -= 500 * dt;
+			this.titleBar.width -= 500 * dt;
+			this.scrollbarBG.x = this.x + this.width;
+			this.scrollbar.x = this.scrollbarBG.x + 3;
+		}
 	}
-	if (baa.keyboard.isDown("up")) {
-		this.height -= 500 * dt;
-		this.maxVars = Math.floor(13*(this.height/200));
-		this.scrollbarBG.height = this.height;
-		this.scrollbar.height = (12/this.numberOfVars) * this.height;
-	}
-	if (baa.keyboard.isDown("right")) {
-		this.width += 500 * dt;
-		this.selector.width += 500 * dt;
-		this.titleBar.width += 500 * dt;
-		this.scrollbarBG.x = this.x + this.width;
-		this.scrollbar.x = this.scrollbarBG.x + 3;
-	}
-	if (baa.keyboard.isDown("left")) {
-		this.width -= 500 * dt;
-		this.selector.width -= 500 * dt;
-		this.titleBar.width -= 500 * dt;
-		this.scrollbarBG.x = this.x + this.width;
-		this.scrollbar.x = this.scrollbarBG.x + 3;
-	}
-
 
 }
 
@@ -2818,6 +2890,7 @@ baa.debug.draw = function () {
 	if (this.active) {
 		baa.debug.windows.draw();
 	}
+	baa.graphics.setColor(255,255,255);
 }
 
 baa.debug.set = function (v) {
@@ -2845,10 +2918,17 @@ baa.debug.windows = baa.group.new(baa.debug._window.new(100,107,300,200));
 //Het main window moet 'game' bevatten.
 
 
-//todo
-//Put stuff from Entity to sprite (Done)
+//List of stuff to add:
+/*
+Group:
+	Group.refresh/reset : remove all elements from the group (functions stay)
 
-//debug (DONE)
-//timer (DONE)
-//tween (DONE)
-//Make a fucking game!!
+
+
+
+
+
+
+
+
+ */

@@ -9,5 +9,5 @@ Game.update = function () {
 }
 
 Game.draw = function () {
-
+	
 }

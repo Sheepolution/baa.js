@@ -15,5 +15,8 @@ baa.config = function (t) {
 
 }
 
+baa.graphics.preload ("png",
+	"numbers"
+);
 
 baa.run();
