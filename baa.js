@@ -53,7 +53,7 @@ Class.extend = function (name) {
 	var supr = {};
 	for(var key in this) {
 		temp[key] = this.__clone(this[key]);
-		if (typeof(this[key])=="function" && key!="__clone" && key!="isClass") {
+		if (typeof(this[key])=="function" && key!="isClass") {
 			supr[key] = this.__clone(this[key],true);
 		}
 	}
@@ -86,6 +86,7 @@ Class.implement = function (obj) {
 
 
 Class.is = function (obj) {
+	if (obj == null) { return false; }
 	var t = typeof(obj);
 	for (var i = 0; i < this._names.length; i++) {
 		if ((t == "object" && this._names[i] == obj.type()) || (obj == this._names[i])) {
@@ -98,7 +99,7 @@ Class.is = function (obj) {
 
 Class.type = function () {
 	if (this._names[this._names.length-1].length == null) {
-		throw("Add a type name! class:extend([TYPE])");
+		throw("Add a type name! class.extend([TYPE])");
 	}
 	return this._names[this._names.length-1];
 }
@@ -123,7 +124,7 @@ Class.__clone = function(obj,supr) {
 	var temp = obj.constructor();
 	for(var key in obj) {
 		if (key == "super") { continue; }
-		if (key == "__clone" || key == "isClass" || key == "new") { continue; }
+		if (key == "__clone" || key == "isClass" || key == "new" || key.substring(0,2) == "__") { continue; }
 		temp[key] = this.__clone(obj[key],supr);
 	}
 	return temp;
@@ -131,8 +132,10 @@ Class.__clone = function(obj,supr) {
 
 Class.isClass = function (c) {
 	if (c!=null) {
-		if (c["_isClass"]) {
-			return true;
+		if (typeof(c) == "object") {
+			if (c["_isClass"]) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -376,7 +379,7 @@ baa.sprite.init = function (x,y) {
 }
 
 baa.sprite.update = function () {
-	this.animate()
+	this.animate();
 }
 
 baa.sprite.draw = function () {
@@ -384,7 +387,7 @@ baa.sprite.draw = function () {
 		baa.graphics.setAlpha(this.alpha);
 		this.image.draw(this.frames[this.currentFrame-1],
 		this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
-		this.rotation,this.scale.x,this.scale.y,this.origin.x,this.origin.y)
+		this.rotation,this.scale.x,this.scale.y,this.origin.x,this.origin.y);
 		baa.graphics.setAlpha(1);
 	}
 }
@@ -721,7 +724,7 @@ baa.graphics.circle = function (mode,x,y,r) {
 
 	this.ctx.beginPath();
 	this.ctx.arc(x,y,Math.abs(r),0,2*Math.PI);
-	this._mode(mode)
+	this._mode(mode);
 	this.ctx.closePath();
 }
 
@@ -758,7 +761,7 @@ baa.graphics.star = function (mode,x,y,r1,r2,p) {
 						y+Math.sin((i*(360/p))/180 *Math.PI)*r1);
 
 		this.ctx.lineTo(x+Math.cos((i*(360/p)+(180/p))/180 *Math.PI)*r2,
-						y+Math.sin((i*(360/p)+(180/p))/180 *Math.PI)*r2)
+						y+Math.sin((i*(360/p)+(180/p))/180 *Math.PI)*r2);
 
 	}
 	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r1,
@@ -862,7 +865,7 @@ baa.graphics.clear = function () {
 
 baa.graphics.print = function (t,align,limit,x,y,r,sx,sy,ox,oy,kx,ky) {
 	if (typeof(align) == "number") {
-		this._print(t,"left",align,limit,x,y,r,sx,sy,ox,oy)
+		this._print(t,"left",align,limit,x,y,r,sx,sy,ox,oy);
 	}
 	else {
 		this._print(t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit);
@@ -919,12 +922,12 @@ baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
 	else {
 		line = t;
 	}
- 	this.ctx.save();
+	this.ctx.save();
 	this.ctx.transform(1,ky,kx,1,0,0);
 	this.ctx.translate(x,y);
 	this.ctx.scale(sx,sy);
 	this.ctx.rotate(r);
-  	this.ctx.fillText(line, -ox,-oy+this.currentFont.size);
+	this.ctx.fillText(line, -ox,-oy+this.currentFont.size);
 	this.ctx.restore();
 	this.ctx.textAlign="left";
 }
@@ -955,7 +958,7 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	baa._checkType("quad",quad,"object",null);
 	
 	if (this._images[img.url]==null) {
-		throw("Image doesn't exist. Did you forget to preload it?")
+		throw("Image doesn't exist. Did you forget to preload it?");
 	}
 
 	x = x == null ? 0 : x;
@@ -1027,8 +1030,6 @@ baa.graphics._image.getHeight = function () {
 baa.graphics.newImage = function (url,smooth) {
 	return this._image.new(url, smooth);
 }
-
-
 
 
 //font
@@ -1336,6 +1337,8 @@ baa.graphics.pop = function () {
 //Utils
 
 baa.graphics._mode = function (mode) {
+	baa._checkType("mode",mode,"string");
+
 	if (mode == "fill") {
 		this.ctx.fill();
 	}
@@ -1763,7 +1766,7 @@ baa.filesystem = {};
 
 //Filesystem uses store.js
 /* Copyright (c) 2010-2013 Marcus Westin */
-(function(e){function o(){try{return r in e&&e[r]}catch(t){return!1}}var t={},n=e.document,r="localStorage",i="script",s;t.disabled=!1,t.set=function(e,t){},t.get=function(e){},t.remove=function(e){},t.clear=function(){},t.transact=function(e,n,r){var i=t.get(e);r==null&&(r=n,n=null),typeof i=="undefined"&&(i=n||{}),r(i),t.set(e,i)},t.getAll=function(){},t.forEach=function(){},t.serialize=function(e){return JSON.stringify(e)},t.deserialize=function(e){if(typeof e!="string")return undefined;try{return JSON.parse(e)}catch(t){return e||undefined}};if(o())s=e[r],t.set=function(e,n){return n===undefined?t.remove(e):(s.setItem(e,t.serialize(n)),n)},t.get=function(e){return t.deserialize(s.getItem(e))},t.remove=function(e){s.removeItem(e)},t.clear=function(){s.clear()},t.getAll=function(){var e={};return t.forEach(function(t,n){e[t]=n}),e},t.forEach=function(e){for(var n=0;n<s.length;n++){var r=s.key(n);e(r,t.get(r))}};else if(n.documentElement.addBehavior){var u,a;try{a=new ActiveXObject("htmlfile"),a.open(),a.write("<"+i+">document.w=window</"+i+'><iframe src="/favicon.ico"></iframe>'),a.close(),u=a.w.frames[0].document,s=u.createElement("div")}catch(f){s=n.createElement("div"),u=n.body}function l(e){return function(){var n=Array.prototype.slice.call(arguments,0);n.unshift(s),u.appendChild(s),s.addBehavior("#default#userData"),s.load(r);var i=e.apply(t,n);return u.removeChild(s),i}}var c=new RegExp("[!\"#$%&'()*+,/\\\\:;<=>?@[\\]^`{|}~]","g");function h(e){return e.replace(/^d/,"___$&").replace(c,"___")}t.set=l(function(e,n,i){return n=h(n),i===undefined?t.remove(n):(e.setAttribute(n,t.serialize(i)),e.save(r),i)}),t.get=l(function(e,n){return n=h(n),t.deserialize(e.getAttribute(n))}),t.remove=l(function(e,t){t=h(t),e.removeAttribute(t),e.save(r)}),t.clear=l(function(e){var t=e.XMLDocument.documentElement.attributes;e.load(r);for(var n=0,i;i=t[n];n++)e.removeAttribute(i.name);e.save(r)}),t.getAll=function(e){var n={};return t.forEach(function(e,t){n[e]=t}),n},t.forEach=l(function(e,n){var r=e.XMLDocument.documentElement.attributes;for(var i=0,s;s=r[i];++i)n(s.name,t.deserialize(e.getAttribute(s.name)))})}try{var p="__storejs__";t.set(p,p),t.get(p)!=p&&(t.disabled=!0),t.remove(p)}catch(f){t.disabled=!0}t.enabled=!t.disabled,typeof module!="undefined"&&module.exports&&this.module!==module?module.exports=t:typeof define=="function"&&define.amd?define(t):e.store=t})(Function("return this")())
+(function(e){function o(){try{return r in e&&e[r]}catch(t){return!1}}var t={},n=e.document,r="localStorage",i="script",s;t.disabled=!1,t.set=function(e,t){},t.get=function(e){},t.remove=function(e){},t.clear=function(){},t.transact=function(e,n,r){var i=t.get(e);r==null&&(r=n,n=null),typeof i=="undefined"&&(i=n||{}),r(i),t.set(e,i)},t.getAll=function(){},t.forEach=function(){},t.serialize=function(e){return JSON.stringify(e)},t.deserialize=function(e){if(typeof e!="string")return undefined;try{return JSON.parse(e)}catch(t){return e||undefined}};if(o())s=e[r],t.set=function(e,n){return n===undefined?t.remove(e):(s.setItem(e,t.serialize(n)),n)},t.get=function(e){return t.deserialize(s.getItem(e))},t.remove=function(e){s.removeItem(e)},t.clear=function(){s.clear()},t.getAll=function(){var e={};return t.forEach(function(t,n){e[t]=n}),e},t.forEach=function(e){for(var n=0;n<s.length;n++){var r=s.key(n);e(r,t.get(r))}};else if(n.documentElement.addBehavior){var u,a;try{a=new ActiveXObject("htmlfile"),a.open(),a.write("<"+i+">document.w=window</"+i+'><iframe src="/favicon.ico"></iframe>'),a.close(),u=a.w.frames[0].document,s=u.createElement("div")}catch(f){s=n.createElement("div"),u=n.body}function l(e){return function(){var n=Array.prototype.slice.call(arguments,0);n.unshift(s),u.appendChild(s),s.addBehavior("#default#userData"),s.load(r);var i=e.apply(t,n);return u.removeChild(s),i}}var c=new RegExp("[!\"#$%&'()*+,/\\\\:;<=>?@[\\]^`{|}~]","g");function h(e){return e.replace(/^d/,"___$&").replace(c,"___")}t.set=l(function(e,n,i){return n=h(n),i===undefined?t.remove(n):(e.setAttribute(n,t.serialize(i)),e.save(r),i)}),t.get=l(function(e,n){return n=h(n),t.deserialize(e.getAttribute(n))}),t.remove=l(function(e,t){t=h(t),e.removeAttribute(t),e.save(r)}),t.clear=l(function(e){var t=e.XMLDocument.documentElement.attributes;e.load(r);for(var n=0,i;i=t[n];n++)e.removeAttribute(i.name);e.save(r)}),t.getAll=function(e){var n={};return t.forEach(function(e,t){n[e]=t}),n},t.forEach=l(function(e,n){var r=e.XMLDocument.documentElement.attributes;for(var i=0,s;s=r[i];++i)n(s.name,t.deserialize(e.getAttribute(s.name)))})}try{var p="__storejs__";t.set(p,p),t.get(p)!=p&&(t.disabled=!0),t.remove(p)}catch(f){t.disabled=!0}t.enabled=!t.disabled,typeof module!="undefined"&&module.exports&&this.module!==module?module.exports=t:typeof define=="function"&&define.amd?define(t):e.store=t})(Function("return this")());
 
 baa.filesystem.read = function (name) {
 	baa._checkType("file",name,"string");
@@ -1852,12 +1855,16 @@ baa.run = function () {
 
 baa.loop = function (time) {
 	baa.time.dt = (time - baa.time.last) / 1000;
-	dt = (baa.time.dt > 0) ? baa.time.dt : 1/60;
+	ot = (baa.time.dt > 0) ? baa.time.dt : 1/60;
+	dt = Math.min(ot,1/60);
 	if (baa.update) {
 		baa.update();
+		Time.update();
+		Tween.update();
 	}
+
 	if (baa.debug) {
-	 	baa.debug.update();
+		baa.debug.update();
 	}
 	baa.keyboard._pressed = [];
 	baa.keyboard._released = [];
@@ -1878,15 +1885,13 @@ baa.graphics.drawloop = function (a) {
 		this.ctx.fillStyle = this._rgb(this.color.r,this.color.g,this.color.b);
 		this.ctx.strokeStyle = this._rgb(this.color.r,this.color.g,this.color.b);
 		this.setFont(this.newFont("arial",10));
-	 	baa.draw();
+		baa.draw();
 		this.origin();
 		if (baa.debug) {
-		 	baa.debug.draw();
+			baa.debug.draw();
 		}
 	}
 }
-
-
 
 window.addEventListener('load', _baa_init);
 
@@ -1901,11 +1906,16 @@ window.addEventListener('load', _baa_init);
 baa.once = Class.extend("baa.once");
 
 baa.once.init = function (obj) {
+	baa._checkType("object",obj,"object");
+
 	this.object = obj;
 	this.list = {};
 }
 
 baa.once.do = function (f,args) {
+	baa._checkType("function",f,"string");
+	baa._checkType("arguments",args,"object");
+
 	if (!this.list[f]) {
 		this.list[f] = true;
 		return this.object[f].apply(this.object,args);
@@ -1914,6 +1924,10 @@ baa.once.do = function (f,args) {
 }
 
 baa.once.back = function (f,nf,args) {
+	baa._checkType("function",f,"string");
+	baa._checkType("newFunction",nf,"string");
+	baa._checkType("arguments",args,"object");
+
 	if (this.list[f]) {
 		this.list[f] = null;
 		if (nf) {
@@ -1946,10 +1960,15 @@ baa.util = {};
 baa.util.TAU = Math.PI*2;
 
 baa.util.sign = function (a) {
+	baa._checkType("a",a,"number");
+
 	return a >= 0 ? 1 : -1;
 }
 
 baa.util.any = function (arr,f) {
+	baa._checkType("array",arr,"object");
+	baa._checkType("function",f,"string","function");
+
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (f(arr[i])) {
@@ -1972,6 +1991,9 @@ baa.util.any = function (arr,f) {
 }
 
 baa.util.all = function (arr,f) {
+	baa._checkType("array",arr,"object");
+	baa._checkType("function",f,"string","function");
+
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (!f(arr[i])) {
@@ -1997,6 +2019,9 @@ baa.util.all = function (arr,f) {
 }
 
 baa.util.find = function (arr,f) {
+	baa._checkType("array",arr,"object");
+	baa._checkType("function",f,"string","function");
+	
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
 			if (f(arr[i])) {
@@ -2018,11 +2043,39 @@ baa.util.find = function (arr,f) {
 	return null;
 }
 
+baa.util.findAll = function (arr,f) {
+	baa._checkType("array",arr,"object");
+	baa._checkType("function",f,"string","function");
+	
+	var newarr = [];
+	if (typeof(f)=="function") {
+		for (var i=0; i < arr.length; i++) {
+			if (f(arr[i])) {
+				newarr.push(i);
+			}
+		}
+	}
+	else {
+		for (var i=0; i < arr.length; i++) {
+			for (var key in f) {
+				if (arr[i][key]!=undefined) {
+					if (arr[i][key] == f[key]) {
+						newarr.push(i);
+					}
+				}
+			}
+		}
+	}
+	return newarr;
+}
+
 baa.util.has = function () {
 	var arr = arguments[0];
+	baa._checkType("array",arr,"object");
 	f = Array.prototype.slice.call(arguments);
 	f.splice(0,1);
 	for (var i = 0; i < f.length; i++) {
+		baa._checkType("key",f[i],"string");
 		succes = false;
 		for (var j = 0; j < arr.length; j++) {
 			if (arr[j] == f[i]) {
@@ -2037,6 +2090,9 @@ baa.util.has = function () {
 }
 
 baa.util.count = function (arr,f) {
+	baa._checkType("array",arr,"object");
+	baa._checkType("function",f,"string","function");
+	
 	var c = 0;
 	if (typeof(f)=="function") {
 		for (var i=0; i < arr.length; i++) {
@@ -2061,10 +2117,19 @@ baa.util.count = function (arr,f) {
 
 
 baa.util.clamp = function (a,min,max) {
+	baa._checkType("a",a,"number");
+	baa._checkType("min",min,"number");
+	baa._checkType("max",max,"number");
+	
 	return Math.min(max,Math.max(min,a));
 }
 
 baa.util.getAngle = function (a,b,c,d) {
+	baa._checkType("x1",a,"number");
+	baa._checkType("y1",b,"number");
+	baa._checkType("x2",c,"number");
+	baa._checkType("y2",d,"number");
+
 	if (!c) {
 		return Math.atan2(b.y - a.y,b.x - a.x);
 	}
@@ -2073,19 +2138,44 @@ baa.util.getAngle = function (a,b,c,d) {
 	}
 }
 
-baa.util.random = function (s,e,d) {
+baa.util.random = function (s,e) {
 	if (e==null) {
+		baa._checkType("value",s,"number");
 		return Math.floor(Math.random()*s);
 	}
 	else {
+		baa._checkType("min",s,"number");
+		baa._checkType("max",e,"number");
 		return s+Math.floor(Math.random()*(e-s+1));
 	}
 }
 
 baa.util.choose = function (arr) {
+	baa._checkType("array",arr,"object");
+
 	return arr[Math.floor(Math.random()*arr.length)];
 }
 
+baa.util.same = function (arr1,arr2) {
+	baa._checkType("array1",arr2,"object");
+	baa._checkType("array2",arr1,"object");
+
+	var arr = [];
+	for (var i = 0; i < arr1.length; i++) {
+		for (var j = 0; j < arr2.length; j++) {
+			if (arr1[i] == arr2[j]) {
+				arr.push(arr1[i]);
+			}
+		}
+	}
+	return arr;
+}
+
+baa.util.remove = function (arr,f) {
+	//find does the checktypes
+	arr.splice(this.find(arr,f));
+	return arr;
+}
 
 ///////////
 // Group //
@@ -2096,7 +2186,7 @@ baa.group = Class.extend("baa.group");
 //Use .other if you want obj A to apply to obj B and vise versa
 //Use .one if you want obj B to apply to obj A only if obj A applied to obj B returns false
 baa.group.other = "__GroupOthers";
-baa.group.one = "_GroupOne";
+baa.group.one = "__GroupOne";
 
 baa.group.init = function () {
 	this.length = 0;
@@ -2113,7 +2203,7 @@ baa.group.add = function (obj) {
 				for (key in arguments[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(arguments[i][key]) == "function") {
-							this.makeFunc(key);
+							this._makeFunc(key);
 						}
 					}
 				}
@@ -2126,7 +2216,7 @@ baa.group.add = function (obj) {
 				for (key in obj[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(obj[i][key]) == "function") {
-							this.makeFunc(key);
+							this._makeFunc(key);
 						}
 					}
 				}
@@ -2138,7 +2228,7 @@ baa.group.add = function (obj) {
 			for (key in obj) {
 				if (!this.hasOwnProperty(key)) {
 					if (typeof(obj[key]) == "function") {
-						this.makeFunc(key);
+						this._makeFunc(key);
 					}
 				}
 			}
@@ -2147,6 +2237,8 @@ baa.group.add = function (obj) {
 }
 
 baa.group.remove = function (obj) {
+	baa._checkType("object",obj,"number","object");
+
 	if (obj == null) { return false; }
 	var dead;
 	if (typeof(obj) == "object") {
@@ -2156,30 +2248,6 @@ baa.group.remove = function (obj) {
 				break;
 			}
 		}
-		// print("dead");
-		this[dead] = null;
-	}
-	else {
-		this[obj] = null;
-		dead = obj;
-	}
-	for (var i = dead+1; i < this.length; i++) {
-		this[i-1] = this[i];
-	}
-	this.length--;
-	this[this.length] = null;
-	// print(this.length)
-}
-
-baa.group.remove = function (obj) {
-	var dead;
-	if (typeof(obj) == "object") {
-		for (var i=0; i < this.length; i++) {
-			if (this[i] == obj) {
-				dead = i;
-				break;
-			}
-		}
 		this[dead] = null;
 	}
 	else {
@@ -2193,7 +2261,7 @@ baa.group.remove = function (obj) {
 	this[this.length] = null;
 }
 
-baa.group.makeFunc = function (k) {
+baa.group._makeFunc = function (k) {
 	this[k] = function () {
 		var other = arguments[0]
 		if (other == baa.group.other || other == baa.group.one) {
@@ -2229,6 +2297,8 @@ baa.group.do = function (f) {
 }
 
 baa.group.count = function (f) {
+	baa._checkType("condition",f,"function","object");
+
 	var c = 0;
 	if (typeof(f)=="function") {
 		for (var i=0; i < this.length; i++) {
@@ -2252,6 +2322,8 @@ baa.group.count = function (f) {
 }
 
 baa.group.find = function (f) {
+	baa._checkType("condition",f,"function","object");
+
 	if (typeof(f)=="function") {
 		for (var i=0; i < this.length; i++) {
 			if (f(this[i])) {
@@ -2277,62 +2349,102 @@ baa.group.prepare = function (obj) {
 	for (key in obj) {
 		if (!this.hasOwnProperty(key)) {
 			if (typeof(obj[key]) == "function") {
-				this.makeFunc(key);
+				this._makeFunc(key);
 			}
 		}
+	}
+}
+
+baa.group.flush = function () {
+	this.length = 0;
+	for (var i=0; i < this.length; i++) {
+		delete(this[i]); 
 	}
 }
 
 
 //Timer
 //////////////////////////////////
-baa.timeManager = Class.extend("baa.timeManager");
+baa.timerManager = Class.extend("baa.timerManager");
 
-baa.timeManager.init = function (object) {
+baa.timerManager.init = function (object) {
+	baa._checkType("object",object,"object",null);
+	this.obj = object;
 	this.timers = [];
-	this.obj = object;
 	this.playing = true;
+	this.new = this.newTimer;
+	this.newTimer = null;
 }
 
-baa.timeManager.setObject = function (object) {
+baa.timerManager.setObject = function (object) {
+	baa._checkType("object",object,"object");
 	this.obj = object;
 }
 
-baa.timeManager.getObject = function () {
+baa.timerManager.getObject = function () {
 	return this.obj;
 }
 
-baa.timeManager.newTimer = function (time,loop,cond,func,args) {
-	var t = baa.timer.new(this,time,loop,cond,this.obj,func,args);
+baa.timerManager.newTimer = function (obj,time,loop,once,cond,func,args) {
+	var t;
+	if (typeof(obj) == "number") {
+		t = baa.timer.new(obj,time,loop,once,this.obj,cond,func,this);
+	}
+	else {
+		t = baa.timer.new(time,loop,once,obj,cond,func,args,this);
+	}
 	this.timers.push(t);
 	return t;
-}
 
-baa.timeManager.update = function () {
-	if (this.playing) {
-		for (var i = 0; i < this.timers.length; i++) {
+}
+baa.timerManager.update = function () {
+	if (this.playing) 	{
+		for (var i = this.timers.length - 1; i >= 0; i--) {
+			if (this.timers[i].dead) { this.timers.splice(i,1); continue; }
 			this.timers[i].update();
 		}
 	}
 }
 
-baa.timeManager.play = function () {
+baa.timerManager.play = function () {
 	this.playing = true;
 }
 
-baa.timeManager.pause = function () {
+baa.timerManager.pause = function () {
 	this.playing = false;
 }
 
+Time = baa.timerManager.new();
+
 baa.timer = Class.extend("baa.timer");
 
-baa.timer.init = function (manager,time,loop,cond,obj,func,args) {
+/**
+ * Create a new timer
+ * @param  {float} time    			The length of the timer
+ * @param  {bool} loop    			If the timer should loop or not (default: false);
+ * @param  {object} obj     		The object used for the next arguments
+ * @param  {object}{function} cond  Set what condition to be true for the timer to run. Can be function or object.
+ * @param  {function}{string} func  What function to call when the timer is finished
+ * @param  {array} args    			An array of arguments for the function
+ * @param  {object} manager 		The manager assigned to this timer
+ * @return {object}         		The timer
+ */
+baa.timer.init = function (time,loop,once,obj,cond,func,args,manager) {
+	baa._checkType("time",time,"number");
+	baa._checkType("loop",loop,"boolean",null);
+	baa._checkType("once",once,"boolean",null);
+	baa._checkType("object",obj,"object",null);
+	baa._checkType("condition",cond,"object","function",null);
+	baa._checkType("function",func,"function","string",null);
+	baa._checkType("arguments",args,"object",null);
+
 	this.manager = manager;
 	this.time = time;
 	this.timeStart = time;
-	this.condition = cond || function () { return true; };
+	this.condition = cond;
 	this.condType = typeof(this.condition);
-	this.loop = loop;
+	this.loop = loop || false;
+	this.once = once || false;
 	this.obj = obj;
 	this.func = func;
 	this.args = args;
@@ -2346,27 +2458,29 @@ baa.timer.setObject = function (obj) {
 }
 
 baa.timer.getObject = function () {
-	return this.obj || this.manager.getObject();
+	return this.obj || (this.manager ? this.manager.getObject() : null);
 }
 
 baa.timer.setCondition = function (condition) {
+	baa._checkType("condition",condition,"function","object");
+
 	this.condition = condition || function () { return true; }
 	this.condType = typeof(this.condition);
 }
 
 baa.timer.update = function () {
-	if (this.playing) {
+	if (this.playing && !this.dead) {
 		if (this.loop) {
 			this.ended = false;
 		}
 		if (!this.ended) {
-			var succes = false
-			var obj = this.manager.getObject();
+			var succes = true
+			var obj = this.getObject();
 			if (this.condition) {
 				if (this.condType == "object") {
 					for (var key in this.condition) {
-						if (this.condition[key] == obj[key]) {
-							succes = true;
+						if (this.condition[key] != obj[key]) {
+							succes = false;
 						}
 					}
 				}
@@ -2374,9 +2488,7 @@ baa.timer.update = function () {
 					succes = this.condition(obj);
 				}
 			}
-			else {
-				succes = true;
-			}
+				
 			if (succes) {
 				this.time -= dt;
 				if (this.time < 0) {
@@ -2385,6 +2497,11 @@ baa.timer.update = function () {
 					}
 
 					this.ended = true;
+
+					if (this.once) {
+						this.kill();
+						return;
+					}
 					
 					if (this.loop) {
 						this.time += this.timeStart;
@@ -2416,6 +2533,7 @@ baa.timer.stop = function () {
 
 baa.timer.kill = function () {
 	this.dead = true;
+	this.playing = false;
 }
 
 baa.timer.isDone = function () {
@@ -2429,25 +2547,42 @@ baa.tweenManager = Class.extend("baa.tweenManager");
 baa.tweenManager.init = function (obj) {
 	this.obj = obj;
 	this.tweens = [];
-	this.afters = [];
 }
 
-baa.tweenManager.to = function (rate,vars,obj) {
+baa.tweenManager.to = function (obj,rate,vars,force) {
+	
+	if (typeof(obj) == "number") {
+		force = vars;
+		vars = rate;
+		rate = obj;
+		obj = this.obj;
+	}
+	baa._checkType("rate",rate,"number");
+	baa._checkType("vars",vars,"object");
+	baa._checkType("force",force,"boolean",null);
+	baa._checkType("object",obj,"object");
+
 	var tween = baa.tween.new(this);
 	tween.obj = obj || this.obj;
-	tween.rate = 1/rate;
+	tween.rate = rate > 0 ? 1/rate : 1;
 	tween.vars = vars;
+	tween.force = force || false;
 	this.tweens.push(tween);
 	return tween;
 }
 
 baa.tweenManager.update = function () {
-	for (var i = 0; i < this.tweens.length; i++) {
+	for (var i = this.tweens.length - 1; i >= 0; i--) {
 		if (this.tweens[i].dead) { this.tweens.splice(i,1); continue; }
 		this.tweens[i].update();
 	}
 }
 
+baa.tweenManager.getObject = function () {
+	return this.obj;
+} 
+
+Tween = baa.tweenManager.new();
 
 baa.tween = Class.extend("baa.tween");
 
@@ -2459,21 +2594,32 @@ baa.tween.init = function (manager) {
 	this.inout = "in";
 	this.easing = "linear";
 	this.dead = false;
+	this.obj = this.manager.getObject();
 }
 
 baa.tween.update = function () {
 	if (this.dead) { return; };
 	if (this._delay > 0) { this._delay -= dt; return;};
-	if (!this.inited) { this.start(); if (this.startFunc) { this.startFunc(this.startObj);} };
+	if (!this.inited) { 
+		this.start();
+		if (this.startFunc) {
+			baa.tween.__call(this.startObj,this.startFunc);
+		}
+	}
 	this.progress += this.rate * dt;
 	var p = this.progress;
 	p = p >= 1 ? 1 : p;
-	p = this.ease(p,this.inout,this.easing);
+	p = baa.tween.__ease(p,this.inout,this.easing);
 	for (var prop in this.vars) {
 		this.obj[prop] =  this.vars[prop].start + p * this.vars[prop].diff;
 	}
+	if (this.updateFunc) {
+		baa.tween.__call(this.updateObj,this.updateFunc);
+	}
 	if (this.progress >= 1) {
-		if (this.completeFunc) { this.completeFunc(this.completeObj); }
+		if (this.completeFunc) { 
+			baa.tween.__call(this.completeObj,this.completeFunc);
+		}
 		this.dead = true;
 		if (this._after) {
 			this.manager.tweens.push(this._after);
@@ -2482,35 +2628,88 @@ baa.tween.update = function () {
 }
 
 baa.tween.start = function() {
+	//Check if there are duplicates
+	for (var i = 0; i < this.manager.tweens.length; i++) {
+		var twn = this.manager.tweens[i];
+
+		//We only check for inited, alive tweens.
+		//Since this tween itself is not inited yet, we automatically check if it is itself.
+		if (twn.inited && !twn.dead) {
+			//If they are the same object
+			if (this.obj == twn.obj) {
+				//Make an array of all they keys both tweens have
+				var same = [];
+				for (key in this.vars) {
+					for (key2 in twn.vars) {
+						if (key == key2) {
+							same.push(key);
+						}
+					}
+				}
+				for (var j = 0; j < same.length; j++) {
+					//Wh1ether we use force to overwrite it or not
+					if (this.force) {
+						delete(twn.vars[same[j]]);
+					}
+					else {
+						delete(this.vars[same[j]]);
+					}
+				}
+			}
+		}
+	}
+
 	for (var prop in this.vars) {
 		this.vars[prop] = {
 		start : this.obj[prop],
 		diff : this.vars[prop] - this.obj[prop]
 		};
 	}
+
 	this.inited = true;
 }
 
-baa.tween.delay = function (x) {
-	this._delay = x;
+baa.tween.delay = function (delay) {
+	baa._checkType("delay",delay,"number");
+
+	this._delay = delay;
 	return this;
 }
 
-baa.tween.easing = function (inout,easing) {
+baa.tween.ease = function (inout,easing) {
+	baa._checkType("inout",inout,"string");
+	baa._checkType("easing",easing,"string");
+
 	this.inout = inout;
 	this.easing = easing;
 	return this;
 }
 
-baa.tween.onComplete = function(f,obj) {
-	this.completeFunc = f;
-	this.completeObj = obj || this.obj;
+baa.tween.onStart = function (f,obj) {
+	baa._checkType("function",f,"function","string");
+	baa._checkType("object",obj,"object",null);
+
+	this.startFunc = f;
+	this.startObj = obj || this.obj;
 	return this;
 }
 
-baa.tween.onStart = function (f,obj) {
-	this.startFunc = f;
-	this.startObj = obj || this.obj;
+baa.tween.onUpdate = function (f,obj) {
+	baa._checkType("function",f,"function","string");
+	baa._checkType("object",obj,"object",null);
+
+	this.updateFunc = f;
+	this.updateObj = obj || this.obj;
+	return this;
+}
+
+baa.tween.onComplete = function(f,obj) {
+	baa._checkType("function",f,"function","string");
+	baa._checkType("object",obj,"object",null);
+
+	this.completeFunc = f;
+	this.completeObj = obj || this.obj;
+	return this;
 }
 
 baa.tween.stop = function () {
@@ -2521,397 +2720,93 @@ baa.tween.rush = function () {
 	this.progress = 1;
 }
 
-baa.tween.after = function (rate,vars,obj) {
+baa.tween.to = function (obj,rate,vars,force) {
+	if (typeof(obj) == "number") {
+		force = vars;
+		vars = rate;
+		rate = obj;
+		obj = this.obj;
+	}
+
+	baa._checkType("rate",rate,"number");
+	baa._checkType("vars",vars,"object");
+	baa._checkType("force",force,"boolean",null);
+	
 	this._after = baa.tween.new(this.manager);
-	this._after.obj = obj || this.obj;
-	this._after.rate = 1/rate;
+	this._after.obj = obj;
+	this._after.rate = rate > 0 ? 1/rate : 1;
 	this._after.vars = vars;
+	this._after.force = force || false;
 	return this._after;
 }
 
-baa.tween.ease = function (p,inout,easing) {
+baa.tween.__call = function (obj,func) {
+	typeof(func) == "string" ? obj[func]() : func(obj);
+}
+
+baa.tween.__ease = function (p,inout,easing) {
 	if (inout == "out") {
 		p = 1 - p;
-		if (easing == "back") {
-			p = 1 - this.back(p);
-		}
-		else if (easing == "quad") {
-			p = 1 - this.quad(p);
-		}
+		p = 1 - baa.tween["__" + easing](p);
 	}
-	if (inout == "in") {
-		if (easing == "back") {
-			p = this.back(p);
-		}
-		else if (easing == "quad") {
-			p = this.quad(p);
-		}
+	else if (inout == "in") {
+		p = baa.tween["__" + easing](p);
 	}
-	if (inout == "inout") {
-		p = p * 2 
-	    if (p < 1) {
-	      return .5 * (this.quad(p));
-	    }
-	    else
-	      p = 2 - p
-	      return .5 * (1 - (this.quad(p))) + .5
-	    end 
+	else if (inout == "inout") {
+		p = p * 2;
+		if (p < 1) {
+			return .5 * (baa.tween["__" + easing](p));
+		}
+		else {
+			p = 2 - p;
+			return .5 * (1 - (baa.tween["__" + easing](p))) + .5;
+		}
 	}
 	return p;
 }
 
-
-
-//Debug
-///////////////////////////////
-
-baa.debug = Class.extend("baa.debug");
-
-baa.debug.font = baa.graphics.newFont("Courier new",12,"bold");
-
-baa.debug._window = baa.rect.extend("baa.debug.window");
-
-baa.debug._window.init = function (x,y,w,h) {
-	baa.debug._window.super.init(this,x,y,w,h);
-
-	this.maxVars = Math.floor(13*(h/200));
-	this.numberOfVars = 0;
-	
-	this.position = 0;
-
-	this.titleBarHeight = 30;
-	this.titleBar = baa.rect.new(x,y-this.titleBarHeight,w,this.titleBarHeight);
-
-	this.title = "Debug Menu";
-
-	this.object;
-
-	this.scrollBarWidth = 14;
-
-	this.scrollbarBG = baa.rect.new(x+w,y,this.scrollBarWidth,h);
-	this.scrollbar = baa.rect.new(x+w+3,y+5,9,h-10);
-	
-	this.selector = baa.rect.new(0,0,w,15);
-	this.selectorMargin = y % 15;
-	this.hover;
-	this.selected;
-	this.prevSelected;
-	this.selectedType;
-
-	this.blinkTimer = 0;
-
-	this.tempValue = "";
-
-	this.keys = [];
-
-	this.path = [];
-
-	this.moving = false;
-
-	this.mouseMargin = baa.point.new();
+baa.tween.__linear = function (p) {
+	return p;
 }
 
-baa.debug._window.update = function () {
-
-	this.blinkTimer+= dt;
-
-	if (this.blinkTimer > 1) {
-		this.blinkTimer = 0;
-	}
-
-	this.selector.x = this.x;
-	this.hover = Math.floor((baa.mouse.getY() - this.y)/15);
-
-	if (this.overlaps(baa.mouse)) {
-		if (baa.keyboard.isDown("shift")) {
-			if (baa.mouse.isPressed("wu")) {
-				this.position = Math.max(0,this.position - 3);
-			}
-			else if (baa.mouse.isPressed("wd")) {
-				this.position = Math.min(this.numberOfVars-this.maxVars,this.position + 3);
-			}
-			else if (baa.mouse.isPressed("l")) {
-				if (this.path.length > 0 && this.hover == 0 && this.position == 0) {
-					this.setObject(this.path[this.path.length-1]);
-					this.path.pop();
-				}
-				else {
-					var key = this.keys[this.hover + this.position - (this.path.length > 0 ? 1 : 0)];
-					if (key == this.selected) {
-						this.tempValue = "";
-					}
-					else {
-						this.selectedType = typeof(this.object[key]);
-						if (this.selectedType == "boolean") {
-							this.object[key] = !this.object[key];
-						}
-						else if (this.selectedType == "number" || this.selectedType == "string") {
-							this.selected = key;
-							this.tempValue = this.object[this.selected].toString();
-						}
-						else if (this.selectedType == "object") {
-							this.path.push(this.object);
-							this.setObject(this.object[key]);
-						}
-					}
-				}
-			}
-		}
-		this.selector.y = (this.y + this.hover*15);
-	}
-
-	if (this.titleBar.overlaps(baa.mouse)) {
-		if (baa.mouse.isPressed("l")) {
-			this.mouseMargin.x = baa.mouse.getX() - this.titleBar.x;
-			this.mouseMargin.y = baa.mouse.getY() - this.titleBar.y;
-			this.moving = true;
-		}
-	}
-
-	if (baa.mouse.isReleased("l")) {
-		this.moving = false;
-	}
-
-	if (this.moving) {
-		this.move();
-	}
-
-	this.scrollbar.y = this.y + (this.position * (this.height/(this.numberOfVars)))+2;
-	if (baa.keyboard.isDown("shift")) {
-		if (baa.keyboard.isDown("down")) {
-			this.height += 500 * dt;
-			this.maxVars = Math.floor(13*(this.height/200));
-			this.scrollbarBG.height = this.height;
-			this.scrollbar.height = (12/this.numberOfVars) * this.height;
-
-		}
-		if (baa.keyboard.isDown("up")) {
-			this.height -= 500 * dt;
-			this.maxVars = Math.floor(13*(this.height/200));
-			this.scrollbarBG.height = this.height;
-			this.scrollbar.height = (12/this.numberOfVars) * this.height;
-		}
-		if (baa.keyboard.isDown("right")) {
-			this.width += 500 * dt;
-			this.selector.width += 500 * dt;
-			this.titleBar.width += 500 * dt;
-			this.scrollbarBG.x = this.x + this.width;
-			this.scrollbar.x = this.scrollbarBG.x + 3;
-		}
-		if (baa.keyboard.isDown("left")) {
-			this.width -= 500 * dt;
-			this.selector.width -= 500 * dt;
-			this.titleBar.width -= 500 * dt;
-			this.scrollbarBG.x = this.x + this.width;
-			this.scrollbar.x = this.scrollbarBG.x + 3;
-		}
-	}
-
+baa.tween.__quad = function (p) {
+	return p * p;
 }
 
-baa.debug._window.draw = function () {
-	baa.graphics.setColor(0,0,0);
-	baa.debug._window.super.draw(this,"fill");
-	baa.graphics.setLineWidth(2);
-	baa.graphics.setColor(200,200,200);
-	baa.debug._window.super.draw(this,"line");
-	
-	//Scrollbar
-	if (this.numberOfVars > this.maxVars) {
-		this.scrollbarBG.draw("fill");
-		baa.graphics.setColor(0,0,0);
-		this.scrollbar.draw("fill");
-	}
-	
-	//Title
-	baa.graphics.setColor(0,0,0);
-	this.titleBar.draw("fill");
-	baa.graphics.setColor(200,200,200);
-	this.titleBar.draw("line");
-
-	baa.graphics.setColor(255,255,255)
-	baa.graphics.setFont(baa.debug.font);
-	baa.graphics.print(this.title,"center",1000,this.titleBar.x+this.titleBar.width/2,this.titleBar.y+7)
-	
-	if (this.overlaps(baa.mouse)) {
-		baa.graphics.setColor(150,150,150);
-		this.selector.draw();
-	}
-
-	var i = 0;
-	var j = 0;
-	var obj;
-	var str = "";
-	var mkey;
-	for (var key in this.object) {
-		obj = this.object[key];
-
-		if (this.position == 0 && j == 0 && this.path.length > 0) {
-			baa.graphics.setColor(255,255,255)
-			baa.graphics.print("<- back",this.x,this.y)
-			j++;
-		}
-		
-		if (typeof(obj)!="function" && key.charAt(0)!="_") {
-
-			if (i >= this.position && j < this.maxVars) {
-
-				mkey = key.substring(0,18);
-				if (key.length == 19) {
-					mkey = key;
-				}
-				else if (key.length > 19) {
-					mkey = mkey + "~"
-				}
-
-
-				if (typeof(obj) == "object") {
-					if (Class.isClass(obj)) {
-						baa.graphics.setColor(255,200,200);
-						str = mkey + ": " + obj.type();
-					}
-					else {
-						if (Array.isArray(obj)) {
-							baa.graphics.setColor(255,255,200);
-							str = mkey + ": array(" + obj.length + ")";
-						}
-						else {
-							baa.graphics.setColor(200,255,200);
-							str = mkey + ": object";
-						}
-					}
-				}
-				else {
-					if (typeof(obj) == "string") {
-						baa.graphics.setColor(200,255,200);
-						if (key == this.selected) {
-							str = mkey + ": " + '"' + (this.tempValue||"") + (this.blinkTimer > 0.5 ? "|" : " ") + '"';
-						}
-						else {
-							str = mkey + ": " + '"' + obj + '"';
-						}
-					}
-					else {
-						baa.graphics.setColor(255,255,255);
-						if (key == this.selected) {
-							str = mkey + ": " + (this.tempValue||"") + (this.blinkTimer > 0.5 ? "|" : "");
-						}
-						else {
-							str = mkey + ": " + obj;
-						}
-					}
-				}
-				baa.graphics.print(str,this.x+5,this.y+2+15*j);
-				j++;
-			}
-			i++;
-		}
-	}
+baa.tween.__cubic = function (p) {
+	return p * p * p;
 }
 
-baa.debug._window.setObject = function (v) {
-	this.object = v;
-	this.numberOfVars = 0;
-	this.keys = [];
-	this.selected = null;
-	this.position = 0;
-	for (var key in this.object) {
-		if (typeof(this.object[key]) !="function" && key.charAt(0)!="_") {
-			this.numberOfVars++;
-			this.keys.push(key);
-		}
-	}
-	this.scrollbar.height = (12/this.numberOfVars) * this.height;
+baa.tween.__quart = function (p) {
+	return p * p * p * p;
 }
 
-baa.debug._window.move = function () {
-	this.x = baa.mouse.getX() - this.mouseMargin.x; 
-	this.y = baa.mouse.getY() + this.titleBarHeight - this.mouseMargin.y;
-	this.titleBar.x = this.x;
-	this.titleBar.y = this.y-this.titleBarHeight;
-
-	this.scrollbarBG.x = this.x+this.width;
-	this.scrollbarBG.y = this.y;
-
-	this.scrollbar.x = this.scrollbarBG.x + 3;
-	this.scrollbar.y = this.y + 5;
+baa.tween.__quint = function (p) {
+	return p * p * p * p *p;
 }
 
-baa.debug._window.keyPressed = function (key,keycode) {
-	if (this.selected) {
-		if (key == "backspace") {
-			this.tempValue = this.tempValue.substring(0,this.tempValue.length-1);
-		}
-		else if (key == "return") {
-			if (this.selectedType == "number") {
-				this.object[this.selected] = parseFloat(this.tempValue) || 0;
-			}
-			else {
-				this.object[this.selected] = this.tempValue;
-			}
-			this.prevSelected = this.selected;
-			this.selected = null;
-		}
-		else if (key == "escape") {
-			this.prevSelected = this.selected;
-			this.selected = null;
-		}
-		else {
-			if (this.selectedType == "number") {
-				if (keycode >= 48 && keycode <= 57) {
-					this.tempValue = this.tempValue + key;
-				}
-			}
-			else {
-				if ((keycode >= 48 && keycode <= 57) || (keycode >= 65 && keycode <= 90) || key == " ") {
-					this.tempValue = this.tempValue + key;
-				}
-			}
-		}
-	}
-	else {
-		if (baa.keyboard.isPressed("return")) {
-			if (this.prevSelected) {
-				this.selected = this.prevSelected;
-			}
-		}
-	}
+baa.tween.__expo = function (p) {
+	return Math.pow(2, (10 * (p - 1)));
 }
 
-baa.debug.active = false;
-
-baa.debug.update = function () {
-	if (this.active) {
-		baa.debug.windows.update();
-	}
+baa.tween.__sine = function (p) {
+	return -Math.cos(p * (Math.PI * .5)) + 1;
 }
 
-baa.debug.draw = function () {
-	if (this.active) {
-		baa.debug.windows.draw();
-	}
-	baa.graphics.setColor(255,255,255);
+baa.tween.__circ = function (p) {
+	return -(Math.sqrt(1 - (p * p)) - 1);
 }
 
-baa.debug.set = function (v) {
-	this.windows[0].setObject(v);
-	
+baa.tween.__back = function (p) {
+	return p * p * (2.7 * p - 1.7);
 }
 
-baa.debug.keypressed = function (key,u) {
-	if (key == " ") {
-		if (baa.keyboard.isDown("shift")) {
-			this.active = !this.active;
-		}
-	}
-	if (this.active) {
-		this.windows.keyPressed(key,u);
-	}
+baa.tween.__elastic = function (p) {
+	return -(Math.pow(2,(10*(p-1)))*Math.sin((p-1.075)*(Math.PI*2)/.3));
 }
-
-baa.debug.windows = baa.group.new(baa.debug._window.new(100,107,300,200));
 
 //TODO
+////DEBUUGGG
 //Make windows contain objects.
 //Er is een main window, en door in het main window op variables te klikken
 //met middle mouse knop open je een nieuw window.
@@ -2920,10 +2815,6 @@ baa.debug.windows = baa.group.new(baa.debug._window.new(100,107,300,200));
 
 //List of stuff to add:
 /*
-Group:
-	Group.refresh/reset : remove all elements from the group (functions stay)
-
-
 
 
 

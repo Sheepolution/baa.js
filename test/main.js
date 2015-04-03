@@ -1,6 +1,5 @@
 baa.load = function () {
 	game = Game.new();
-	baa.debug.set(game);
 }
 
 baa.update = function () {
@@ -16,7 +15,8 @@ baa.config = function (t) {
 }
 
 baa.graphics.preload ("png",
-	"numbers"
+	"numbers",
+	"logo"
 );
 
 baa.run();
