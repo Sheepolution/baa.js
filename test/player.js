@@ -1,4 +1,4 @@
-Player = baa.entity.extend("Player");
+Player = baa.button.extend("Player");
 
 Player.init = function (x,y) {
 	Player.super.init(this,x,y);
@@ -7,11 +7,10 @@ Player.init = function (x,y) {
 	this.setImage("logo")
 	// this.twnmanger.to(2,{x:500},true).delay(0.2);
 	baa.debug.watch(this,"Player");
-	this.rotate = 1;
-
 }
 
 Player.update = function () {
+	Player.super.update(this);
 	this.x -= 100 * dt;
 }
 

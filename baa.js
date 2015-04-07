@@ -109,6 +109,7 @@ Class.__clone = function(obj,supr) {
 		var _super  = function () {
 			var args = Array.prototype.slice.call(arguments);
 			var _this = args[0];
+			baa._checkType("this",_this,"Class");
 			args.splice(0,1);
 			// _this.__superWasCalled = true;
 			return obj.apply(_this,args);
@@ -630,6 +631,20 @@ baa.entity.separateAxis = function (e, a) {
 		e.separateAxis(this, a);
 	}
 }
+
+baa.button = baa.sprite.extend("baa.button");
+
+baa.button.init = function (x,y) {
+	baa.button.super.init(this,x,y);
+}
+
+baa.button.update = function () {
+	if (this.overlaps(baa.mouse)) {
+		baa.mouse.setCursor("hand")
+	}
+}
+
+//TODO: FINISH THIS!
 
 
 
@@ -1811,7 +1826,7 @@ baa.mouse.catchReleased = function (button) {
 }
 
 baa.mouse.setCursor = function (cursor) {
-	baa._checkType("button",arguments[i],"string");
+	baa._checkType("button",cursor,"string");
 	document.getElementById("canvas").style.cursor=cursor;
 }
 
@@ -1920,6 +1935,7 @@ baa.loop = function (time) {
 	}
 
 	if (baa.update) {
+		baa.mouse.setCursor("default");
 		baa.update();
 		Timer.update();
 		Tween.update();
@@ -1952,7 +1968,7 @@ baa.graphics.drawloop = function (a) {
 		this.ctx.strokeStyle = this._rgb(this._color.r,this._color.g,this._color.b);
 		this.setFont(this.newFont("arial",10));
 		baa.draw();
-		this.origin();
+
 		if (baa.debug) {
 			baa.debug.draw();
 		}
