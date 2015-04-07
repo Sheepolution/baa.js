@@ -3,14 +3,23 @@ Player = baa.entity.extend("Player");
 Player.init = function (x,y) {
 	Player.super.init(this,x,y);
 	// this.teleTimer = baa.timer.new();
-	this.initTween();
+	// this.initTween();
 	this.setImage("logo")
 	// this.twnmanger.to(2,{x:500},true).delay(0.2);
+	baa.debug.watch(this,"Player");
+	this.rotate = 1;
+
 }
 
 Player.update = function () {
-	// this.x += dt * 100;
+	this.x -= 100 * dt;
 }
+
+// Player.draw = function () {
+// 	// baa.graphics.setScissor(400,100,300,50)
+// 	baa.graphics.rectangle("fill",this.x,this.y,100,100);
+// 	// baa.graphics.pop();
+// }
 
 Player.teleport = function () {
 	this.x = 0

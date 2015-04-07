@@ -148,9 +148,9 @@ Class.isClass = function (c) {
 
 var _baa_init = function () {
 	baa.graphics.canvas = document.getElementById('canvas');
-	baa.graphics.defaultCanvas = baa.graphics.canvas;
+	baa.graphics._defaultCanvas = baa.graphics.canvas;
 	baa.graphics.ctx = baa.graphics.canvas.getContext('2d');
-	baa.graphics.defaultCtx = baa.graphics.ctx;
+	baa.graphics._defaultCtx = baa.graphics.ctx;
 
 	document.addEventListener("keydown",baa.keyboard._downHandler, false);
 	document.addEventListener("keyup",baa.keyboard._upHandler, false);
@@ -164,7 +164,7 @@ baa = {};
 baa._typesafe = true;
 
 baa._checkType = function () {
-	if (!this._typesafe) { return };
+	if (!this._typesafe) { return; };
 	var name = arguments[0];
 	var obj = arguments[1];
 
@@ -262,12 +262,12 @@ baa.rect.init = function (x,y,width,height) {
 
 	this.width = width || 0;
 	this.height = height == null ? this.width : height;
-	this.color;
+	this._color;
 }
 
 baa.rect.draw = function (mode,r) {
-	if (this.color) {
-		baa.graphics.setColor(this.color);
+	if (this._color) {
+		baa.graphics.setColor(this._color);
 	}
 	baa.graphics.rectangle(mode || "fill",this.x,this.y,this.width,this.height,r);
 }
@@ -364,7 +364,7 @@ baa.sprite.init = function (x,y) {
 	this.offset = baa.point.new(0,0);
 	this.scale = baa.point.new(1,1);
 	this.alpha = 1;
-	this.rotation = 0;
+	this.angle = 0;
 	this.flip = false;
 
 	this.image;
@@ -387,7 +387,7 @@ baa.sprite.draw = function () {
 		baa.graphics.setAlpha(this.alpha);
 		this.image.draw(this.frames[this.currentFrame-1],
 		this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
-		this.rotation,this.scale.x,this.scale.y,this.origin.x,this.origin.y);
+		this.angle,this.flip ? -this.scale.x : this.scale.x,this.scale.y,this.origin.x,this.origin.y);
 		baa.graphics.setAlpha(1);
 	}
 }
@@ -552,12 +552,8 @@ baa.entity.draw = function () {
 }
 
 baa.entity.drawDebug = function () {
-	baa.graphics.setAlpha(0.5);
-	baa.graphics.setColor(100,255,0);
-	baa.graphics.setLineWidth(0.5);
-	baa.graphics.rectangle("line",this.last.x,this.last.y,this.last.width,this.last.height);
-
 	baa.graphics.setAlpha(1);
+	baa.graphics.setLineWidth(2);
 	baa.graphics.setColor(255,0,0);
 	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height);
 }
@@ -643,15 +639,14 @@ baa.entity.separateAxis = function (e, a) {
 
 //Graphics
 baa.graphics = {};
-baa.graphics.defaultCtx;
-baa.graphics.defaultCanvas;
-baa.graphics.defaultSmooth = false;
-baa.graphics.currentCanvas;
+baa.graphics._defaultCtx;
+baa.graphics._defaultCanvas;
+baa.graphics._defaultSmooth = false;
+baa.graphics._currentCanvas;
 baa.graphics._images = {};
-baa.graphics.color = {r:255,g:255,b:255,a:255};
-baa.graphics.backgroundColor = {r:0,g:0,b:0};
-baa.graphics.pointSize = 1;
-baa.graphics.currentFont;
+baa.graphics._color = {r:255,g:255,b:255,a:255};
+baa.graphics._backgroundColor = {r:0,g:0,b:0};
+baa.graphics._currentFont;
 baa.graphics.width;
 baa.graphics.height;
 
@@ -668,7 +663,7 @@ baa.graphics.preload = function () {
 		this._images[name] = img;
 		baa._assetsToBeLoaded++;
 		
-	};
+	}
 }
 
 //Drawing functions
@@ -676,10 +671,7 @@ baa.graphics.preload = function () {
 baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number","baa.rect");
-	baa._checkType("y",y,"number",null);
-	baa._checkType("width",w,"number",null);
-	baa._checkType("height",h,"number",null);
-	baa._checkType("rounding",r,"number",null);
+	
 
 	if (Class.isClass(x) && x.is(baa.rect)) {
 		r = y;
@@ -688,6 +680,11 @@ baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 		h = x.height;
 		x = x.x;
 	}
+
+	baa._checkType("y",y,"number");
+	baa._checkType("width",w,"number");
+	baa._checkType("height",h,"number");
+	baa._checkType("rounding",r,"number",null);
 
 	if (r==null) {
 		this.ctx.beginPath();
@@ -714,6 +711,8 @@ baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 		this.ctx.quadraticCurveTo(x-r, y-r, x+r, y-r);
 		this._mode(mode);
 	}
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.circle = function (mode,x,y,r) {
@@ -726,6 +725,8 @@ baa.graphics.circle = function (mode,x,y,r) {
 	this.ctx.arc(x,y,Math.abs(r),0,2*Math.PI);
 	this._mode(mode);
 	this.ctx.closePath();
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.convex = function (mode,x,y,r,p) {
@@ -744,30 +745,38 @@ baa.graphics.convex = function (mode,x,y,r,p) {
 	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r,
 					y+Math.sin((i*(360/p))/180 *Math.PI)*r);
 	this._mode(mode);
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
-baa.graphics.star = function (mode,x,y,r1,r2,p) {
+baa.graphics.star = function (mode,x,y,r1,r2,p,r) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number");
 	baa._checkType("y",y,"number");
 	baa._checkType("r1",r1,"number");
 	baa._checkType("r2",r2,"number");
 	baa._checkType("p",p,"number");
+	baa._checkType("r",r,"number",null);
+
+	r = r || 0;
 
 	p = Math.max(3,p);
 	this.ctx.beginPath();
-	for (var i = 0; i < p; i++) {
-		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r1,
-						y+Math.sin((i*(360/p))/180 *Math.PI)*r1);
 
-		this.ctx.lineTo(x+Math.cos((i*(360/p)+(180/p))/180 *Math.PI)*r2,
-						y+Math.sin((i*(360/p)+(180/p))/180 *Math.PI)*r2);
+	for (var i = 0; i < p; i++) {
+		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + r)*r1,
+						y+Math.sin((i*(360/p))/180 *Math.PI + r)*r1);
+
+		this.ctx.lineTo(x+Math.cos((i*(360/p)+(180/p))/180 *Math.PI + r)*r2,
+						y+Math.sin((i*(360/p)+(180/p))/180 *Math.PI + r)*r2);
 
 	}
-	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r1,
-					y+Math.sin((i*(360/p))/180 *Math.PI)*r1);
+	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + r)*r1,
+					y+Math.sin((i*(360/p))/180 *Math.PI + r)*r1);
 
 	this._mode(mode);
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.arc = function (mode,x,y,r,a1,a2) {
@@ -783,6 +792,8 @@ baa.graphics.arc = function (mode,x,y,r,a1,a2) {
 	this.ctx.arc(x,y,Math.abs(r),a1,a2);
 	this.ctx.lineTo(x,y);
 	this._mode(mode);
+	
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 
@@ -819,6 +830,8 @@ baa.graphics.line = function () {
 		};
 	}
 	this.ctx.stroke();
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.polygon = function (mode) {
@@ -855,12 +868,16 @@ baa.graphics.polygon = function (mode) {
 	}
 	this.ctx.closePath();
 	this._mode(mode);
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.clear = function () {
-	this.ctx.fillStyle = this._rgb(this.backgroundColor.r,this.backgroundColor.b,this.backgroundColor.g);
+	this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.b,this._backgroundColor.g);
 	this._background();
-	this.ctx.fillStyle = this._rgb(this.color.r,this.color.b,this.color.g);
+	this.ctx.fillStyle = this._rgb(this._color.r,this._color.b,this._color.g);
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics.print = function (t,align,limit,x,y,r,sx,sy,ox,oy,kx,ky) {
@@ -870,6 +887,8 @@ baa.graphics.print = function (t,align,limit,x,y,r,sx,sy,ox,oy,kx,ky) {
 	else {
 		this._print(t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit);
 	}
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
@@ -909,10 +928,10 @@ baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
 				this.ctx.translate(x,y);
 				this.ctx.scale(sx,sy);
 				this.ctx.rotate(r);
-				this.ctx.fillText(line, -ox,-oy+this.currentFont.size);
+				this.ctx.fillText(line, -ox,-oy+this._currentFont.size);
 				this.ctx.restore();
 				line = words[i] + ' ';
-				y += this.currentFont.height+sy;
+				y += this._currentFont.height+sy;
 			}
 			else {
 				line = testLine;
@@ -927,7 +946,7 @@ baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
 	this.ctx.translate(x,y);
 	this.ctx.scale(sx,sy);
 	this.ctx.rotate(r);
-	this.ctx.fillText(line, -ox,-oy+this.currentFont.size);
+	this.ctx.fillText(line, -ox,-oy+this._currentFont.size);
 	this.ctx.restore();
 	this.ctx.textAlign="left";
 }
@@ -942,10 +961,12 @@ baa.graphics.draw = function (img,quad,x,y,r,sx,sy,ox,oy,kx,ky) {
 	else{
 		this._draw(img,x,y,r,sx,sy,ox,oy,kx,ky,quad);
 	}
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
-	baa._checkType("image",img,"baa.graphics.image");
+	baa._checkType("image",img,"baa.graphics.image","string");
 	baa._checkType("x",x,"number",null);
 	baa._checkType("y",y,"number",null);
 	baa._checkType("r",r,"number",null);
@@ -957,7 +978,8 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	baa._checkType("ky",ky,"number",null);
 	baa._checkType("quad",quad,"object",null);
 	
-	if (this._images[img.url]==null) {
+	var url = typeof(img) == "string" ? img : img.url;
+	if (this._images[url]==null) {
 		throw("Image doesn't exist. Did you forget to preload it?");
 	}
 
@@ -971,21 +993,20 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	kx = kx == null ? 0 : kx;
 	ky = ky == null ? kx : ky;
 
-	var smooth = img.smooth == null ? this.defaultSmooth : img.smooth;
-	this.ctx.imageSmoothingEnabled = img.smooth;
-	this.ctx.mozImageSmoothingEnabled = img.smooth;
-	this.ctx.oImageSmoothingEnabled = img.smooth;;
-	// this.ctx.webkitImageSmoothingEnabled = img.smooth;
+	var smooth = img.smooth == null ? this._defaultSmooth : img.smooth;
+	this.ctx.imageSmoothingEnabled = smooth;
+	this.ctx.mozImageSmoothingEnabled = smooth;
+	this.ctx.oImageSmoothingEnabled = smooth;
 	this.ctx.save();
 	this.ctx.transform(1,ky,kx,1,0,0);
 	this.ctx.translate(x,y);
 	this.ctx.scale(sx,sy);
 	this.ctx.rotate(r);
 	if (quad) {
-		this.ctx.drawImage(this._images[img.url],quad.x,quad.y,quad.width,quad.height,-ox,-oy,quad.width,quad.height);
+		this.ctx.drawImage(this._images[url],quad.x,quad.y,quad.width,quad.height,-ox,-oy,quad.width,quad.height);
 	}
 	else{
-		this.ctx.drawImage(this._images[img.url],-ox,-oy);
+		this.ctx.drawImage(this._images[url],-ox,-oy);
 	}
 	this.ctx.restore();
 	this.ctx.imageSmoothingEnabled = this.defaultFilter == "linear";
@@ -1109,9 +1130,10 @@ baa.graphics._canvas.setWidth = function (width) {
 	return this.drawable.width = width;
 }
 
-baa.graphics._canvas.addWidth = function () {
-//!!
-}
+// baa.graphics._canvas.addWidth = function () {
+// //!!
+// }
+
 
 baa.graphics._canvas.setHeight = function (height) {
 	baa._checkType("height",height,"number");
@@ -1139,19 +1161,20 @@ baa.graphics.newCanvas = function (width,height) {
 
 baa.graphics.setSmooth = function (smooth) {
 	baa._checkType("smooth",smooth,"boolean");
-	this.defaultSmooth = smooth;
+	this._defaultSmooth = smooth;
 }
 
 baa.graphics.setColor = function (r,g,b,a) {
+	if (a && a > 1) { print("Warning: Alpha uses 0 to 1, not 0 to 255!"); }
 	if (typeof(r)=="object") {
 		baa._checkType("red",r[0],"number",null);
 		baa._checkType("green",r[1],"number",null);
 		baa._checkType("blue",r[2],"number",null);
 		baa._checkType("alpha",r[3],"number",null);
-		this.color.r = r[0];
-		this.color.g = r[1];
-		this.color.b = r[2];
-		this.color.a = r[3];
+		this._color.r = r[0];
+		this._color.g = r[1];
+		this._color.b = r[2];
+		this._color.a = r[3];
 	}
 	else {
 		baa._checkType("red",r,"number",null);
@@ -1159,27 +1182,21 @@ baa.graphics.setColor = function (r,g,b,a) {
 		baa._checkType("blue",b,"number",null);
 		baa._checkType("alpha",a,"number",null);
 
-		this.color.r = r==null ? this.color.r : r;
-		this.color.g = g==null ? this.color.g : g;
-		this.color.b = b==null ? this.color.b : b;
-		this.color.a = a==null ? this.color.a : a;
+		this._color.r = r==null ? this._color.r : r;
+		this._color.g = g==null ? this._color.g : g;
+		this._color.b = b==null ? this._color.b : b;
+		this._color.a = a==null ? this._color.a : a;
 	}
-	this.ctx.fillStyle = this._rgb(this.color.r,this.color.g,this.color.b);
-	this.ctx.strokeStyle = this._rgb(this.color.r,this.color.g,this.color.b);
-	this.ctx.globalAlpha = this.color.a;
+	this.ctx.fillStyle = this._rgb(this._color.r,this._color.g,this._color.b);
+	this.ctx.strokeStyle = this._rgb(this._color.r,this._color.g,this._color.b);
+	this.ctx.globalAlpha = this._color.a;
 }
-
-
 
 baa.graphics.setAlpha = function (a) {
 	baa._checkType("alpha",a,"number");
 
-	this.color.a = Math.min(1,Math.max(0,a));
+	this._color.a = Math.min(1,Math.max(0,a));
 	return this.ctx.globalAlpha = a;
-}
-
-baa.graphics.getAlpha = function () {
-	this.color.a;
 }
 
 baa.graphics.setBackgroundColor = function (r,g,b) {
@@ -1188,18 +1205,18 @@ baa.graphics.setBackgroundColor = function (r,g,b) {
 		baa._checkType("green",r[1],"number",null);
 		baa._checkType("blue",r[2],"number",null);
 
-		this.backgroundColor.r = r[0] || this.backgroundColor.r;
-		this.backgroundColor.g = r[1] || this.backgroundColor.g;
-		this.backgroundColor.b = r[2] || this.backgroundColor.b;
+		this._backgroundColor.r = r[0] || this._backgroundColor.r;
+		this._backgroundColor.g = r[1] || this._backgroundColor.g;
+		this._backgroundColor.b = r[2] || this._backgroundColor.b;
 	}
 	else {
 		baa._checkType("red",r,"number",null);
 		baa._checkType("green",g,"number",null);
 		baa._checkType("blue",b,"number",null);
 
-		this.backgroundColor.r = r==null ? this.backgroundColor.r : r;
-		this.backgroundColor.g = g==null ? this.backgroundColor.g : g;
-		this.backgroundColor.b = b==null ? this.backgroundColor.b : b;
+		this._backgroundColor.r = r==null ? this._backgroundColor.r : r;
+		this._backgroundColor.g = g==null ? this._backgroundColor.g : g;
+		this._backgroundColor.b = b==null ? this._backgroundColor.b : b;
 	}
 }
 
@@ -1218,7 +1235,7 @@ baa.graphics.setNewFont = function (fnt,size,style,height) {
 baa.graphics.setFont = function (fnt) {
 	baa._checkType("font",fnt,"baa.graphics.font");
 
-	this.currentFont = fnt;
+	this._currentFont = fnt;
 	this.ctx.font = fnt.style + " " + fnt.size + "pt " + fnt.name;
 
 }
@@ -1233,44 +1250,47 @@ baa.graphics.setCanvas = function (cvs) {
 	baa._checkType("canvas",cvs,"baa.graphics.canvas",null);
 
 	if (cvs==null) {
-		this.ctx = this.defaultCtx;
-		this.canvas = this.defaultCanvas;
-		this.currentCanvas = null;
+		this.ctx = this._defaultCtx;
+		this.canvas = this._defaultCanvas;
+		this._currentCanvas = null;
 	}
 	else{
 		this.ctx = cvs.context;
 		this.canvas = cvs.drawable;
-		this.currentCanvas = cvs;
+		this._currentCanvas = cvs;
 	}
 }
 
 baa.graphics.setScissor = function (x,y,w,h) {
-	this.ctx.rect(x, y, w, h);
-	this.ctx.clip();
-
-}
-
-baa.graphics.removeScissor = function () {
-	this.ctx.clip();
+	if (x!=null) {
+		this.push();
+		this.ctx.beginPath();
+		this.ctx.rect(x,y,w,h);
+		this.ctx.closePath();
+		this.ctx.clip();
+	}
+	else {
+		this.pop();
+	}
 }
 
 
 //Get functions
 
 baa.graphics.getSmooth = function () {
-	return this.defaultSmooth;
+	return this._defaultSmooth;
 }
 
 baa.graphics.getColor = function () {
-	return [this.color.r,this.color.g,this.color.b,this.color.a];
+	return [this._color.r,this._color.g,this._color.b,this._color.a];
 }
 
 baa.graphics.getAlpha = function () {
-	return this.color.a;
+	return this._color.a;
 }
 
 baa.graphics.getBackgroundColor = function () {
-	return [this.backgroundColor.r,this.backgroundColor.g,this.backgroundColor.b];
+	return [this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b];
 }
 
 baa.graphics.getLineWidth = function () {
@@ -1291,6 +1311,10 @@ baa.graphics.getWidth = function () {
 
 baa.graphics.getHeight = function () {
 	return this.canvas.height;
+}
+
+baa.graphics.getTextWidth = function (t) {
+	return this.ctx.measureText(t).width;
 }
 
 
@@ -1335,7 +1359,6 @@ baa.graphics.pop = function () {
 }
 
 //Utils
-
 baa.graphics._mode = function (mode) {
 	baa._checkType("mode",mode,"string");
 
@@ -1357,6 +1380,8 @@ baa.graphics._mode = function (mode) {
 
 baa.graphics._clearScreen = function () {
 	this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+
+	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
 baa.graphics._background = function () {
@@ -1369,27 +1394,29 @@ baa.graphics._rgb = function (r,g,b) {
 }
 
 baa.graphics._resetFont = function () {
-	this.ctx.font = this.currentFont.size + "pt " + this.currentFont.name;
+	this.ctx.font = this._currentFont.size + "pt " + this._currentFont.name;
 }
+
 
 //Audio
 
 baa.audio = {};
-baa.audio.sources = {};
-baa.audio.masterVolume = 1;
+baa.audio._sources = {};
+baa.audio._masterVolume = 1;
 
 baa.audio.preload = function () {
-	for (var i = 0; i < arguments.length; i++) {
+	var ext = "." + arguments[0];
+	for (var i = 1; i < arguments.length; i++) {
 		var name = arguments[i];
-		baa._checkType("url",name,"string");
-		var source;
-		source = new Audio();
-		source.src = name;
-		source.oncanplaythrough = function(){
+		var snd;
+		snd = new Audio();
+		snd.oncanplaythrough = function(){
 			baa._assetsLoaded++;
 		}
-		baa.audio.sources[name] = source;
+		snd.src = "audio/" + name + ext;
+		this._sources[name] = snd;
 		baa._assetsToBeLoaded++;
+		
 	}
 }
 
@@ -1628,6 +1655,9 @@ baa.keyboard._upHandler = function(event) {
 
 
 baa.keyboard.isDown = function() {
+	if (typeof(arguments[0]) == "object") {
+		arguments = arguments[0];
+	}
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("key",arguments[i],"string");
 		if (baa.keyboard._keysDown[arguments[i]]) {
@@ -1687,6 +1717,9 @@ baa.mouse._downHandler = function (event) {
 		if (baa.mousepressed) {
 			baa.mousepressed(mousepressed,event.clientX,event.clientY);
 		}
+		if (baa.debug) {
+			baa.debug.mousepressed(mousepressed,event.clientX,event.clientY)
+		}
 	}
 	baa.mouse._buttonsDown[mousepressed] = true;
 }
@@ -1708,6 +1741,9 @@ baa.mouse._wheelHandler = function (event) {
 		baa.mouse._pressed.push(mousepressed);
 		if (baa.mousepressed) {
 			baa.mousepressed(mousepressed,event.clientX,event.clientY);
+		}
+		if (baa.debug) {
+			baa.debug.mousepressed(mousepressed,event.clientX,event.clientY)
 		}
 	}
 }
@@ -1752,6 +1788,26 @@ baa.mouse.isReleased = function () {
 		}
 	}
 	return false;
+}
+
+baa.mouse.catchPressed = function (button) {
+	baa._checkType("button",button,"string");
+	for (var i = 0; i < this._pressed.length; i++) {
+		if (button == this._pressed[i]) {
+			this._pressed.splice(i,1);
+			break;
+		}
+	}
+}
+
+baa.mouse.catchReleased = function (button) {
+	baa._checkType("button",button,"string");
+	for (var i = 0; i < this._released.length; i++) {
+		if (button == this._released[i]) {
+			this._released.splice(i,1);
+			break;
+		}
+	}
 }
 
 baa.mouse.setCursor = function (cursor) {
@@ -1857,20 +1913,30 @@ baa.loop = function (time) {
 	baa.time.dt = (time - baa.time.last) / 1000;
 	ot = (baa.time.dt > 0) ? baa.time.dt : 1/60;
 	dt = Math.min(ot,1/60);
+
+	if (baa.debug) {
+		baa.debug.fps = 1000 / (time - baa.time.last);
+		baa.debug.update();
+	}
+
 	if (baa.update) {
 		baa.update();
-		Time.update();
+		Timer.update();
 		Tween.update();
 	}
 
 	if (baa.debug) {
-		baa.debug.update();
+		baa.debug.updateWindows();
 	}
+
+
+	baa.graphics.drawloop();
+
 	baa.keyboard._pressed = [];
 	baa.keyboard._released = [];
 	baa.mouse._pressed = [];
 	baa.mouse._released = [];
-	baa.graphics.drawloop();
+
 	baa.time.last = time;
 	window.requestAnimFrame(baa.loop);
 }
@@ -1878,12 +1944,12 @@ baa.loop = function (time) {
 baa.graphics.drawloop = function (a) {
 	if (baa.draw) {
 		// this._clearScreen();
-		this.ctx.fillStyle = this._rgb(this.backgroundColor.r,this.backgroundColor.g,this.backgroundColor.b);
+		this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b);
 		this.ctx.globalAlpha = 1;
 		this._background();
-		this.ctx.globalAlpha = this.color.a;
-		this.ctx.fillStyle = this._rgb(this.color.r,this.color.g,this.color.b);
-		this.ctx.strokeStyle = this._rgb(this.color.r,this.color.g,this.color.b);
+		this.ctx.globalAlpha = this._color.a;
+		this.ctx.fillStyle = this._rgb(this._color.r,this._color.g,this._color.b);
+		this.ctx.strokeStyle = this._rgb(this._color.r,this._color.g,this._color.b);
 		this.setFont(this.newFont("arial",10));
 		baa.draw();
 		this.origin();
@@ -2187,6 +2253,7 @@ baa.group = Class.extend("baa.group");
 //Use .one if you want obj B to apply to obj A only if obj A applied to obj B returns false
 baa.group.other = "__GroupOthers";
 baa.group.one = "__GroupOne";
+baa.group.forward = "_GroupForward";
 
 baa.group.init = function () {
 	this.length = 0;
@@ -2200,7 +2267,7 @@ baa.group.add = function (obj) {
 				this[this.length] = arguments[i];
 				this.length++;
 				// print(arguments[i].type());
-				for (key in arguments[i]) {
+				for (var key in arguments[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(arguments[i][key]) == "function") {
 							this._makeFunc(key);
@@ -2213,7 +2280,7 @@ baa.group.add = function (obj) {
 			for (var i=0; i < obj.length; i++) {
 				this[this.length] = obj[i];
 				this.length++;
-				for (key in obj[i]) {
+				for (var key in obj[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(obj[i][key]) == "function") {
 							this._makeFunc(key);
@@ -2225,7 +2292,7 @@ baa.group.add = function (obj) {
 		else {
 			this[this.length] = obj;
 			this.length++;
-			for (key in obj) {
+			for (var key in obj) {
 				if (!this.hasOwnProperty(key)) {
 					if (typeof(obj[key]) == "function") {
 						this._makeFunc(key);
@@ -2281,18 +2348,41 @@ baa.group._makeFunc = function (k) {
 			}
 		}
 		else {
-			for (var i=0; i < this.length; i++) {
-				if (this[i].hasOwnProperty(k)) {
-					this[i][k].apply(this[i],arguments);
+			if (arguments[0] == baa.group.forward) {
+				for (var i=0; i < this.length; i++) {
+					if (this[i].hasOwnProperty(k)) {
+						this[i][k].apply(this[i],arguments);
+					}
 				}
 			}
+			else {
+				for (var i = this.length-1; i >= 0; i--) {
+					if (this[i].hasOwnProperty(k)) {
+						this[i][k].apply(this[i],arguments);
+					}
+				}	
+			}
+			
+			
 		}
 	}
 }
 
 baa.group.do = function (f) {
+	baa._checkType("function",f,"function");
+
 	for (var i=0; i < this.length; i++) {
 		f(this[i]);
+	}
+}
+
+baa.group.set = function (key,value) {
+	baa._checkType("key",key,"string");
+
+	for (var i = 0; i < this.length; i++) {
+		if (this[i].hasOwnProperty(key)) {
+			this[i][key] = value;
+		}
 	}
 }
 
@@ -2346,7 +2436,7 @@ baa.group.find = function (f) {
 }
 
 baa.group.prepare = function (obj) {
-	for (key in obj) {
+	for (var key in obj) {
 		if (!this.hasOwnProperty(key)) {
 			if (typeof(obj[key]) == "function") {
 				this._makeFunc(key);
@@ -2356,9 +2446,50 @@ baa.group.prepare = function (obj) {
 }
 
 baa.group.flush = function () {
-	this.length = 0;
 	for (var i=0; i < this.length; i++) {
 		delete(this[i]); 
+	}
+	this.length = 0;
+}
+
+baa.group.sort = function (a,lowToHigh) {
+	baa._checkType("key",a,"string");
+	baa._checkType("lowToHigh",lowToHigh,"boolean");
+
+	sorted = false;
+
+	var danger = 10000;
+
+	while (!sorted && danger > 0) {
+		danger--;
+		sorted = true;
+		for (var i = 0; i < this.length-1; i++) {
+			for (var j = i; j < this.length; j++) {
+				if (lowToHigh) {
+					if (this[i][a] > this[j][a]) {
+						var old = this[j];
+						this[j] = this[i];
+						this[i] = old;
+						sorted = false;
+					}
+				}
+				else {
+					if (this[i][a] < this[j][a]) {
+						var old = this[j];
+						this[j] = this[i];
+						this[i] = old;
+						sorted = false;
+					}
+				}
+			}
+		}
+	}
+	//TODO: Dit weghalen
+	if (danger <= 0) {
+		print("SAVED FROM INFINITE LOOP!");
+	}
+	else {
+		print("Sorting succesfull");
 	}
 }
 
@@ -2414,7 +2545,7 @@ baa.timerManager.pause = function () {
 	this.playing = false;
 }
 
-Time = baa.timerManager.new();
+Timer = baa.timerManager.new();
 
 baa.timer = Class.extend("baa.timer");
 
@@ -2639,8 +2770,8 @@ baa.tween.start = function() {
 			if (this.obj == twn.obj) {
 				//Make an array of all they keys both tweens have
 				var same = [];
-				for (key in this.vars) {
-					for (key2 in twn.vars) {
+				for (var key in this.vars) {
+					for (var key2 in twn.vars) {
 						if (key == key2) {
 							same.push(key);
 						}
@@ -2805,6 +2936,658 @@ baa.tween.__elastic = function (p) {
 	return -(Math.pow(2,(10*(p-1)))*Math.sin((p-1.075)*(Math.PI*2)/.3));
 }
 
+/////////////////////////////
+/////////////////////////////
+
+//Debug
+baa._debug = Class.extend("baa._debug");
+
+baa._debug.init = function () {
+	this.active = false;
+
+	this.playing = true;
+	this.hide = false;
+	this.speed = 1;
+
+	this.activeHold = ["shift","d"];
+	this.activePress = "b";
+
+	this.drawCalls = 0;
+	this.oldDrawCalls //We don't want to count the debug drawcalls, so we store the original value in this
+	this.barFont = baa.graphics.newFont("arial",16);
+
+	//Buttons
+	this.buttonHide = baa.rect.new(260,0,40,40);
+	this.buttonRewind = baa.rect.new(300,0,40,40);
+	this.buttonPlay = baa.rect.new(340,0,40,40);
+	this.buttonForward = baa.rect.new(380,0,40,40);
+
+	this.windows = baa.group.new();
+	this.windows.prepare(baa._debug.window);
+}
+
+baa._debug.update = function () {
+	this.drawCalls = 0;
+	if (this.active) {
+		if (baa.keyboard.isDown(this.activeHold) && baa.keyboard.isPressed(this.activePress)) {
+			this.active = false;
+			return;
+		}
+
+
+		if (baa.mouse.isPressed("l")) {
+			if (this.buttonPlay.overlaps(baa.mouse)) {
+				this.playing = !this.playing;
+			}
+			else if (this.buttonRewind.overlaps(baa.mouse)) {
+				this.speed -= 0.25;
+			}
+			else if (this.buttonForward.overlaps(baa.mouse)) {
+				this.speed += 0.25;
+			}
+			else if (this.buttonHide.overlaps(baa.mouse)) {
+				this.hide = !this.hide;
+			}
+		}
+
+		dt = dt * this.speed;
+		if (!this.playing) {
+			dt = 0;
+			if (baa.mouse.isPressed("m")) {
+				if (this.buttonRewind.overlaps(baa.mouse)) {
+					dt = -ot;
+				}
+				else if (this.buttonForward.overlaps(baa.mouse)) {
+					dt = ot;
+				} 
+
+			}
+		}
+	}
+	else {
+		if (baa.keyboard.isDown(this.activeHold) && baa.keyboard.isPressed(this.activePress)) {
+			this.active = true;
+		}
+	}
+}
+
+baa._debug.updateWindows = function () {
+	if (this.active && !this.hide) {
+		this.windows.update();
+	}
+}
+
+baa._debug.draw = function () {
+	if (this.active) {
+		baa.graphics.setLineWidth(3);
+		this.oDrawCalls = this.drawCalls;
+		baa.graphics.origin();
+		if (this.active && !this.hide) {
+			this.windows.draw(baa.group.forward);
+		}
+		this.drawToolBar();
+
+		baa.graphics.setColor(255,255,255,1);
+		baa.graphics.setLineWidth(1);
+	}
+}
+
+baa._debug.drawToolBar = function () {
+	baa.graphics.setColor(255,255,255);
+	baa.graphics.setAlpha(0.8);
+	baa.graphics.rectangle("fill",0,0,baa.graphics.width,40);
+	baa.graphics.setColor(0,0,0);
+	baa.graphics.setFont(this.barFont);
+	baa.graphics.print("FPS: " + Math.floor(this.fps),5,9);
+	baa.graphics.line(92,0,92,40);
+	baa.graphics.print("Drawcalls: " + this.oDrawCalls,100,9);
+	baa.graphics.line(260,0,260,40);
+	this.drawToolButtons();
+	baa.graphics.setColor(0,0,0);
+	baa.graphics.print("Speed: " + this.speed,this.buttonForward.x + 50,10);
+}
+
+baa._debug.drawToolButtons = function () {
+
+	//Hide
+	baa.graphics.setColor(0,0,0);
+	this.buttonHide.draw();
+	baa.graphics.setColor(255,255,255);
+	this.buttonHide.draw("line");
+
+	//Play
+	baa.graphics.setColor(0,0,0);
+	this.buttonPlay.draw();
+	baa.graphics.setColor(255,255,255);
+	this.buttonPlay.draw("line");
+
+
+	//Rewind
+	baa.graphics.setColor(0,0,0);
+	this.buttonRewind.draw();
+	baa.graphics.setColor(255,255,255);
+	this.buttonRewind.draw("line");
+
+	//Forward
+	baa.graphics.setColor(0,0,0);
+	this.buttonForward.draw();
+	baa.graphics.setColor(255,255,255);
+	this.buttonForward.draw("line");
+
+	baa.graphics.setColor(255,255,255,1);
+
+	//Hide
+	baa.graphics.rectangle("line",this.buttonHide.x + 10,this.buttonHide.y + 10, 20, 20)
+
+	//Rewind
+	baa.graphics.star("fill",this.buttonRewind.x + 15, this.buttonRewind.y + 18,10,5,1,Math.PI);
+	baa.graphics.star("fill",this.buttonRewind.x + 27, this.buttonRewind.y + 18,10,5,1,Math.PI);
+
+	//Forward
+	baa.graphics.star("fill",this.buttonForward.x + 13, this.buttonForward.y + 18,10,5,1);
+	baa.graphics.star("fill",this.buttonForward.x + 25, this.buttonRewind.y + 18,10,5,1);
+	
+	if (this.playing) {
+		//Pause
+		baa.graphics.rectangle("fill",this.buttonPlay.x + 7,this.buttonPlay.y + 5,10,30);
+		baa.graphics.rectangle("fill",this.buttonPlay.x + 23,this.buttonPlay.y + 5,10,30);
+	}
+	else {
+		//Play
+		baa.graphics.star("fill",this.buttonPlay.x + 17, this.buttonPlay.y + 19,16,8,3);
+	}
+}
+
+baa._debug.watch = function (obj,name) {
+	this.windows.set("z",0);
+	var wndow = baa._debug.window.new( obj, name, 10 + 220 * this.windows.length, 100 );
+	wndow.z = 10;
+	this.windows.add(wndow);
+	this.windows.sort("z",true);
+
+}
+
+baa._debug.mousepressed = function (button,x,y) {
+	this.windows.mousepressed(button,x,y);
+}
+
+baa._debug.keypressed = function (key) {
+	this.windows.keypressed(key);
+}
+
+baa._debug.focus = function (wndow) {
+	this.windows.set("z",0);
+	wndow.z = 10;
+	this.windows.sort("z",true);
+}
+
+baa._debug.kill = function (wndow) {
+	this.windows.remove(wndow);
+}
+
+baa._debug.setActivate = function () {
+	this.activePress = arguments[arguments.length-1];
+	this.activeHold = Array.prototype.slice.call(arguments);
+	this.activeHold.splice(arguments.length-1,1)
+}
+
+
+baa._debug.window = Class.extend("baa._debug.window");
+
+baa._debug.types = {
+	"object" : [200,100,100],
+	"string" : [100,200,100],
+	"number" : [100,100,255],
+	"boolean" : [200,200,100],
+	"array" : [150,50,50]
+}
+
+baa._debug.window.init = function (obj,name,x,y) {
+	this.x = x;
+	this.y = y;
+	this.z = Math.random();
+	this.dataY = 50;
+	this.selectorY = -200;
+	this.width = 210;
+	this.height = 400;
+	this.rounding = 0.5
+
+	this.obj = obj;
+	this.originalObject = obj;
+	this.objects = [];
+
+	this.showPrivates = false;
+	this.longestKeyWord = 0;
+	this.textHeightMargin = 20;
+	this.textWidth = 8.3;
+	this.keysWidth = 0;
+	this.longestValueLimit = 13;
+
+	this.selectedKey = "";
+
+	this.editing = false;
+	this.editValue = 0;
+	this.editType = "number";
+	this.editKey = "";
+	this.editTimer = 0;
+
+	this.name = name;
+	this.names = [];
+
+	this.numberOfValues = 0;
+
+	this.titleBar = baa.rect.new(this.x,this.y,this.width,this.dataY / 2.5);
+	this.moving = false;
+
+	this.resizer = baa.rect.new(this.x + this.width - 15,this.y + this.height - 15,20,20);
+	this.resizing = false;
+
+	//Menu
+	this.buttonBack = baa.rect.new(this.x,this.y + this.dataY / 2.5, 25, 27);
+	this.buttonPrivate = baa.rect.new(this.x + 25,this.y + this.dataY / 2.5, 25, 27);
+	this.buttonClose = baa.rect.new(this.x + 50,this.y + this.dataY / 2.5, 25, 27);
+	
+	//Scrolling
+	this.scrollHeight = 0;
+	this.scrollLimit = 100;
+
+
+}
+
+baa._debug.window.update = function () {
+	// this.width = this.keysWidth;
+	// this.keysWidth = this.longestKeyWord * this.textWidth + 10;
+	this.longestValueLimit = Math.floor( (this.width - this.keysWidth) / this.textWidth);
+	this.scrollLimit = this.numberOfValues * (this.textHeightMargin+1) - (this.height - this.dataY/1.8);
+
+	if (baa.mouse.isPressed("l")) {
+		if (this.resizer.overlaps(baa.mouse)) {
+			baa.mouse.catchPressed("l");
+			this.resizing = true;
+		}
+		else if (this.titleBar.overlaps(baa.mouse)) {
+			baa.debug.focus(this);
+			this.moving = true;
+			baa.mouse.catchPressed("l");
+		}
+		else if (this.buttonBack.overlaps(baa.mouse)) {
+			if (this.objects.length > 0) {
+				this.goBackObject();
+			}
+			baa.mouse.catchPressed("l");
+		}
+		else if (this.buttonPrivate.overlaps(baa.mouse)) {
+			this.showPrivates = !this.showPrivates;
+			baa.mouse.catchPressed("l");
+		}
+		else if (this.buttonClose.overlaps(baa.mouse)) {
+			baa.debug.kill(this);
+		}
+	}
+
+	if (baa.mouse.isReleased("l")) {
+		this.resizing = false;
+		this.moving = false;
+	}
+
+	if (this.resizing) {
+		this.width = baa.mouse.getX() - this.x + 10;
+		this.height = baa.mouse.getY() - this.y + 10;
+		this.titleBar.width = this.width;
+		this.scrollHeight = 0;
+	}
+
+	if (this.moving) {
+		this.setPosition(baa.mouse.getX(),baa.mouse.getY());
+	}
+
+	this.resizer.x = this.x + this.width - 15;
+	this.resizer.y = this.y + this.height - 15;
+
+	this.editTimer += dt;
+	if (this.editTimer > 1.5) {
+		this.editTimer = 0;
+	}
+}
+
+baa._debug.window.draw = function () {
+	this.drawData();
+	this.drawButtons();
+	this.drawRectangle();
+	this.drawName();
+	if (!this.resizing && !this.moving) {
+		this.drawSelector();
+	}
+	baa.graphics.setColor(255,255,255);
+	this.resizer.draw("both",2);
+}
+
+baa._debug.window.drawRectangle = function () {
+	baa.graphics.setColor(255,255,255,1);
+	baa.graphics.setLineWidth(3);
+	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height,this.rounding);
+}
+
+baa._debug.window.drawName = function () {
+	baa.graphics.setColor(255,255,255,1);
+	this.titleBar.draw("both",1.8);
+	baa.graphics.setColor(0,0,0);
+	var str = this.name;
+	for (var i = 0; i < this.names.length; i++) {
+		str = str + " -> ";
+		str = str + this.names[i];
+	}
+	baa.graphics.print(str,this.x+5,this.y+4);
+}
+
+baa._debug.window.drawButtons = function () {
+	baa.graphics.setColor(0,0,0);
+	baa.graphics.rectangle("fill",this.buttonBack.x,this.buttonBack.y,this.width,27);
+
+	if (this.objects.length > 0) {
+		baa.graphics.setColor(255,255,255,1);
+		this.buttonBack.draw();
+		baa.graphics.setAlpha(0.3)
+		baa.graphics.setColor(0,0,0);
+		this.buttonBack.draw("line");
+		baa.graphics.setAlpha(1)
+		baa.graphics.print("B",this.buttonBack.x+8,this.buttonBack.y+8);
+	}
+
+	baa.graphics.setColor(255,255,255);
+	this.buttonPrivate.draw();
+	baa.graphics.setColor(0,0,0);
+	baa.graphics.setAlpha(0.3)
+	this.buttonPrivate.draw("line");
+	baa.graphics.setAlpha(1)
+	baa.graphics.print("P",this.buttonPrivate.x+8,this.buttonPrivate.y+8);
+
+	baa.graphics.setColor(255,255,255);
+	this.buttonClose.draw();
+	baa.graphics.setColor(0,0,0);
+	baa.graphics.setAlpha(0.3);
+	this.buttonClose.draw("line");
+	baa.graphics.setAlpha(1);
+	baa.graphics.print("X",this.buttonClose.x+8,this.buttonClose.y+8);
+
+	baa.graphics.setColor(255,255,255);
+	baa.graphics.rectangle("line",this.buttonBack.x,this.buttonBack.y,this.width,27);
+}
+
+baa._debug.window.drawData = function () {
+	//TODO: Zorg ervoor dat dit niet meer in draw staat. Veel shit wordt hier gemaakt
+	//en geupdate, wat in de update loop moet. Bovendien zorgt het voor die bug
+	//die er voor zorgt dat je op dingen achteraan eerst klikt. Dank u!
+	baa.graphics.setScissor(this.x,this.y,this.width,this.height);
+	var i = 0;
+
+	this.longestKeyWord = 0;
+
+	for (var key in this.obj) {
+		if (this.obj[key] == undefined) {
+			if (key == "") {
+				delete(this.obj[key]);
+			}
+		}
+		var type = typeof(this.obj[key]);
+		var sbstr = key.substring(0,1);
+		var value = this.obj[key];
+		var rect = baa.rect.new();
+		
+		if (type == "number") {
+			//We don't want long decimals.
+			value = Math.floor(value*100)/100;
+		}
+		else if (type == "string") {
+			value = '"' + value + '"';
+		}
+		else if (type == "object") {
+			if (Class.isClass(this.obj[key])) {
+				value = this.obj[key].type();
+			}
+			else if (Array.isArray(this.obj[key])) {
+				type = "array"
+				value = "Array (" + this.obj[key].length + ")";
+			}
+		}
+
+		if (type != "function" /* && this.obj[key]!=undefined */) {
+			if (sbstr == "_" && this.showPrivates || sbstr != "_" ) {
+				baa.graphics.setAlpha(0.8);
+				baa.graphics.setColor(baa.debug.types[type])
+				var y = this.getDataY(i) - 3;
+				rect.set(this.x,y,this.width,this.textHeightMargin);
+				if (y > this.y + 40 && y < this.y + this.height) {
+					rect.draw("fill");
+					if (!this.resizing) {
+						if (rect.overlaps(baa.mouse)) {
+							this.selectorY = rect.y;
+							if (baa.mouse.isPressed("l") || baa.mouse.isPressed("m")) {
+								var shouldBreak = this.clickedOnKey(key,type);
+								// baa.mouse.catchPressed("l");
+								// baa.mouse.catchPressed("m");
+								if (shouldBreak) {
+									break;
+								}
+							}
+						}
+					}
+					baa.graphics.setColor(255,255,255,1)
+					baa.graphics.print(key, this.x+10, this.getDataY(i));
+					if (this.editing && this.editKey == key) {
+						baa.graphics.print(this.editValue + (this.editTimer > 0.75 ? "_" : ""), this.x + this.keysWidth + 10, this.getDataY(i));
+					}
+					else {
+						baa.graphics.print("" + value, this.x + this.keysWidth + 10, this.getDataY(i));
+					}
+					this.keysWidth = Math.max(this.keysWidth,baa.graphics.getTextWidth(key) + 10);
+				}
+				i++;
+			}
+		}
+	}
+
+	this.numberOfValues = i;
+
+	baa.graphics.setScissor();
+}
+
+baa._debug.window.drawSelector = function () {
+	if (this.selectorY > this.y + 40) {
+		baa.graphics.setAlpha(0.4);
+		baa.graphics.setColor(255,255,255);
+		baa.graphics.rectangle("fill",this.x,this.selectorY,this.width,this.textHeightMargin);
+		baa.graphics.setAlpha(1);
+	}
+}
+
+baa._debug.window.getDataY = function (i) {
+	return this.y - this.scrollHeight + this.textHeightMargin * i + this.dataY;
+}
+
+baa._debug.window.setPosition = function (x,y) {
+	this.x = x-this.width/2;
+	this.y = y-this.titleBar.height/2;
+	this.titleBar.x = this.x;
+	this.titleBar.y = this.y;
+
+	this.buttonBack.x = this.x
+	this.buttonBack.y = this.y + this.dataY / 2.5;
+
+	this.buttonPrivate.x = this.x + 25;
+	this.buttonPrivate.y = this.y + this.dataY / 2.5;
+
+	this.buttonClose.x = this.x + 50;
+	this.buttonClose.y = this.y + this.dataY / 2.5;
+}
+
+baa._debug.window.mousepressed = function (button,x,y) {
+	if (button == "wd") {
+		if (this.scrollLimit > 0) {
+			this.scrollHeight = Math.min(this.scrollHeight + 20, this.scrollLimit);
+		}
+	}
+	else if (button == "wu") {
+		this.scrollHeight = Math.max(this.scrollHeight - 20, 0);
+	}
+}
+
+baa._debug.window.keypressed = function (key) {
+	if (this.editing) {
+		if (key == "return") {
+			this.confirmEdit();
+		}
+		else if (key == "escape") {
+			this.cancelEdit();
+		}
+		else if (this.editType == "number") {
+			this.pressNumber(key);
+		}
+		else if (this.editType == "string") {
+			this.pressString(key);
+		}
+	}
+	else if (key == "return") {
+		if (this.editKey != "") {
+			this.editing = true
+		}
+	}
+}
+
+baa._debug.window.pressNumber = function (key) {
+	if (!isNaN(key)) {
+		this.editValue = this.editValue + key;
+	}
+	else {
+		if (key == "backspace") {
+			this.editValue = this.editValue.substring(0,this.editValue.length-1);
+		}
+		else if (key == "." && this.editValue.length > 0 && this.editValue.indexOf(".") == -1 && this.editValue.indexOf("-") < this.editValue.length-1) {
+			this.editValue = this.editValue + ".";
+		}
+		else if (key == "-" && this.editValue.length == 0) {
+			this.editValue = this.editValue + "-";
+		} 
+	}
+}
+
+baa._debug.window.pressString = function (key) {
+	if (key.length == 1) {
+		if (baa.keyboard.isDown("shift")) {
+			this.editValue = this.editValue + key.toUpperCase();
+		}
+		else {
+			this.editValue = this.editValue + key;
+		}
+	}
+	else {
+		if (key == "backspace") {
+			this.editValue = this.editValue.substring(0,this.editValue.length-1);
+		}
+	}
+}
+
+
+baa._debug.window.clickedOnKey = function (key,type,pressed) {
+	baa.mouse.catchPressed("l");
+	if (type == "boolean") {
+		this.obj[key] = !this.obj[key];
+		this.cancelEdit();
+		return false;
+	}
+	else if (type == "number" || type == "string") {
+		if (key == this.editKey && this.editing) {
+			this.editValue = "";
+			return false;
+		}
+		else {
+			if (this.editing) { this.cancelEdit(); }
+
+			if (type == "number") {
+				this.editValue = "" + Math.floor(this.obj[key]*100)/100;
+			}
+			else {
+				this.editValue = "" + this.obj[key];
+			}
+			this.editType = type;
+			this.editKey = key;
+			this.editing = true;
+			this.editOriginal = this.obj[key];
+			return false;
+		}
+	}
+	else if (type == "object" || type == "array") {
+		if (baa.mouse.isPressed("m")) {
+			baa.debug.watch(this.obj[key],key);
+			baa.mouse.catchPressed("m");
+			return false;
+		}
+		else {
+			this.setObject(this.obj[key],key);
+			return true;
+		}
+	}
+}
+
+baa._debug.window.setObject = function (obj,name) {
+	this.cancelEdit();
+	this.editKey = "";
+	this.scrollHeight = 0;
+	this.obj = obj;
+	this.objects.push(obj);
+	this.names.push(name);
+}
+
+baa._debug.window.goBackObject = function () {
+	this.cancelEdit();
+	this.editKey = "";
+	this.scrollHeight = 0;
+	if (this.objects.length > 1) {
+		this.obj = this.objects[this.objects.length-2];
+		this.objects.pop();
+		this.names.pop();
+	}
+	else {
+		this.obj = this.originalObject;
+		this.names = [];
+		this.objects = [];
+	}
+}
+
+baa._debug.window.cancelEdit = function () {
+	if (this.editing) {
+		this.editing = false;
+		this.obj[this.editKey] = this.editOriginal;
+		this.editKey = "";
+	}
+}
+
+baa._debug.window.confirmEdit = function () {
+	if (this.editing) {
+		if (this.editKey != "") {
+			this.editing = false;
+			if (this.editType == "number") {
+				this.obj[this.editKey] = Number(this.editValue);
+			}
+			else {
+				this.obj[this.editKey] = this.editValue;
+			}
+		}
+	}
+}
+
+// baa._debug.window.draw
+
+baa.debug = baa._debug.new();
+
+
+//Oh en misschien ook object debug drawing (body rectangle shizzle, van die rode vierkanten)
+
+//Zorg dat windows niet out of bounds kunnen. ( eh..)
+
+//Button to see fps graph (????)
+
+
 //TODO
 ////DEBUUGGG
 //Make windows contain objects.
@@ -2815,10 +3598,9 @@ baa.tween.__elastic = function (p) {
 
 //List of stuff to add:
 /*
+baa.graphics.push and pop for colors, linewidth, all that stuff.
 
-
-
-
+baa.button class
 
 
 
