@@ -1,8 +1,8 @@
 baa.load = function () {
 	baa.graphics.setBackgroundColor(0,0,0);
 	game = Game.new();
-	// baa.debug.watch(game,"Game");
 	bla = 0;
+	baa.debug.watch(game,"Game");
 
 	// baa.debug.setActivate("a","s","q");
 }
@@ -22,7 +22,8 @@ baa.config = function (t) {
 
 baa.graphics.preload("png",
 	"numbers",
-	"logo"
+	"logo",
+	"button_big"
 );
 
 baa.audio.preload("ogg",

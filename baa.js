@@ -18,7 +18,9 @@ BBBBBBBBBBBBBBBBBAAAAAAA                   AAAAAAAAAAAAAA                   AAAA
 
 
 
-//Print function like in Lua
+/**
+ * Saves time from writing console.log, and writes complete functions
+ */
 print = function () {
 	var str = ""
 	for (var i = 0; i < arguments.length; i++) {
@@ -32,22 +34,45 @@ print = function () {
 	console.log(str);
 }
 
+
+/**
+ * Saves time from writing console.log
+ */
 printf = function () {
 	console.log(arguments);
 }
+
 
 //////////////
 ///CLASSIST///
 //////////////
 
+/**
+ * Class object to create classes
+ * @class
+ * @type {object}
+ */
 Class = {};
 
+/**
+ * The names of the class. For each extension there is a new name.
+ * @type {string[]}
+ */
 Class._names = ["Class"];
+
+/**
+ * This is used to check if something is a class
+ */
 Class._isClass = true;
 
+/**
+ * Clones an existing class to create a new type of class.
+ * @param  {string} name The name of the class
+ * @return {Class}      A clone of the class
+ */
 Class.extend = function (name) {
 	if (typeof(name) != "string") {
-		throw("Error: Missing argument name in Class.extend");
+		throw("Missing argument name in Class.extend");
 	}
 	var temp = {};
 	var supr = {};
@@ -62,7 +87,10 @@ Class.extend = function (name) {
 	return temp;
 }
 
-
+/**
+ * Creates a new instance of the class
+ * @return {Class} The new instance of the class.
+ */
 Class.new = function () {
 	var self = this.__clone(this);
 
@@ -75,17 +103,41 @@ Class.new = function () {
 	return self;
 }
 
+/**
+ * Copies the functions of a different class
+ * @param  {Class} obj   The class to implement
+ * @param  {boolean} force Whether to overwrite existing functions.
+ */
+Class.implement = function (obj,force) {
+	baa._checkType("Class",obj,"Class");
+	baa._checkType("force",force,"boolean",null);
 
-Class.implement = function (obj) {
 	for(var key in obj) {
-		if (this[key] == null) {
+		if (this[key] == null || force) {
 			this[key] = this.__clone(obj[key]);
 		}
 	}
 }
 
-
+/**
+ * If something is specific class
+ * @example
+ * var rect = baa.rect.new();
+ * 
+ * //Returns true
+ * rect.is(baa.rect);
+ *
+ * //Returns true
+ * rect.is(baa.point);
+ *
+ * //Returns false
+ * rect.is(baa.sprite);
+ * 
+ * @param  {Class|string}  obj The value you want to check
+ * @return {boolean}  If it is of the type obj 
+ */
 Class.is = function (obj) {
+	baa._checkType("object",obj,"Class","string",null);
 	if (obj == null) { return false; }
 	var t = typeof(obj);
 	for (var i = 0; i < this._names.length; i++) {
@@ -96,7 +148,14 @@ Class.is = function (obj) {
 	return false;
 }
 
-
+/**
+ * Returns the top-layer-type of the class
+ * @example
+ * // returns "baa.rectangle"
+ * baa.rectangle = baa.point.extend("baa.rectangle");
+ * baa.rectangle.type();
+ * @return {string} The type of the class
+ */
 Class.type = function () {
 	if (this._names[this._names.length-1].length == null) {
 		throw("Add a type name! class.extend([TYPE])");
@@ -104,12 +163,18 @@ Class.type = function () {
 	return this._names[this._names.length-1];
 }
 
+/**
+ * Clones the properties of obj
+ * @private
+ * @param  {object} obj  The object to clone properties from
+ * @param  {boolean} supr If this is for extending or not
+ * @return {object}      The cloned object
+ */
 Class.__clone = function(obj,supr) {
 	if (supr) {
 		var _super  = function () {
 			var args = Array.prototype.slice.call(arguments);
 			var _this = args[0];
-			baa._checkType("this",_this,"Class");
 			args.splice(0,1);
 			// _this.__superWasCalled = true;
 			return obj.apply(_this,args);
@@ -131,10 +196,15 @@ Class.__clone = function(obj,supr) {
 	return temp;
 }
 
-Class.isClass = function (c) {
-	if (c!=null) {
-		if (typeof(c) == "object") {
-			if (c["_isClass"]) {
+/**
+ * Ìf something is a class or not
+ * @param  {dynamic}  obj The value to check
+ * @return {boolean}   If it's a class or not
+ */
+Class.isClass = function (obj) {
+	if (obj!=null) {
+		if (typeof(obj) == "object") {
+			if (obj["_isClass"]) {
 				return true;
 			}
 		}
@@ -161,16 +231,31 @@ var _baa_init = function () {
 	document.addEventListener("mousewheel",baa.mouse._wheelHandler, false);
 }
 
+/**
+ * baa.js is a library created by Daniël Haazen.
+ * @constructor
+ * @type {object}
+ */
 baa = {};
+
+/**
+ * Whether to use type safety. Is turned off in release-mode.
+ * @type {boolean}
+ */
 baa._typesafe = true;
 
-baa._checkType = function () {
+/**
+ * Checks if the type of obj is one of the given types, and throws an error if it's not
+ * @param  {string} name The name of the object
+ * @param  {object} obj  The object
+ * @param {dynamic} ... The allowed types
+ */
+baa._checkType = function (name,obj) {
 	if (!this._typesafe) { return; };
-	var name = arguments[0];
-	var obj = arguments[1];
-
+	var t = typeof(obj);
+	if (t == arguments[2]) { return; };
 	str = ""
-	var type = obj == null ? null : typeof(obj);
+	var type = obj == null ? null : Array.isArray(obj) ? "array" : t;
 	var clss =  Class.isClass(obj);
 	for (var i = 2; i < arguments.length; i++) {
 		
@@ -189,38 +274,54 @@ baa._checkType = function () {
 	throw("Wrong type '" + type + "' for " + name + ". Correct types: " + str);
 }
 
-// //Turns "images/player.png" into "player"
-// baa._delDir = function (name) {
-// 	var newName;
-// 	name = name.substring(0, name.length - name.lastIndexOf(".") + 3);
-// 	print(name);
-
-
-// 	return newName
-// }
-
+/**
+ * Number of assets that are loaded
+ * @type {number}
+ */
 baa._assetsLoaded = 0;
+
+/**
+ * Total number of assets that have to be loaded before starting the program
+ * @type {number}
+ */
 baa._assetsToBeLoaded = 0;
 
-//Time
+/**
+ * The object containing information for deltatime
+ * @constructor
+ * @type {object}
+ */
+baa._time = {dt:0,last:0};
 
-baa.timestamp = function () {
+/**
+ * Returns the current time
+ * @return {number} The current time
+ */
+baa._time.stamp = function () {
 	return window.performance && window.performance.now ? window.performance.now() : new Date().getTime();
 }
 
-baa.time = {now:0,dt:0,last:0};
-baa.time.last = baa.timestamp();
-
-////////////////////////////////
-///////////////////////////////
-
-
+/**
+ * The time of the previous loop
+ * @type {number}
+ */
+baa._time.last = baa._time.stamp();
 
 
 //Point
 //////////////////////////////////
 
+/**
+ * A point class. Containing an x and y.
+ * @constructor
+ * @property {number} x The horizontal position
+ * @property {number} y The vertical position
+ * @param  {number} [x=0] The horizontal position
+ * @param  {number} [y=x] The vertical position
+ * @type {Class}
+ */
 baa.point = Class.extend("baa.point");
+
 
 baa.point.init = function (x,y) {
 	baa._checkType("x",x,"number",null);
@@ -230,6 +331,11 @@ baa.point.init = function (x,y) {
 	this.y = y == null ? this.x : y;
 }
 
+/**
+ * Sets the x and y of the point
+ * @param  {number} [x=0] The horizontal position
+ * @param  {number} [y=x] The vertical position
+ */
 baa.point.set = function (x,y) {
 	baa._checkType("x",x,"number",null);
 	baa._checkType("y",y,"number",null);
@@ -238,6 +344,10 @@ baa.point.set = function (x,y) {
 	this.y = y == null ? this.x : y;
 }
 
+/**
+ * Clones the x and y of another point
+ * @param  {baa.point} p The point to clone from
+ */
 baa.point.clone = function (p) {
 	baa._checkType("point",p,"baa.point");
 
@@ -245,6 +355,11 @@ baa.point.clone = function (p) {
 	this.y = p.y;
 }
 
+/**
+ * If the point overlaps with a rectangle
+ * @param  {baa.rectangle} r The rectangle you want to check overlap with
+ * @return {boolean}   If there is overlap
+ */
 baa.point.overlaps = function (r) {
 	baa._checkType("rectangle",r,"baa.rect");
 	return r.x + r.width > this.x && r.x < this.x
@@ -254,6 +369,18 @@ baa.point.overlaps = function (r) {
 //Rect
 //////////////////////////////////
 
+/**
+ * A rectangle class. Extends baa.point with a width and height.
+ * @constructor
+ * @property {number} width The width of the rectangle
+ * @property {number} height The height of the rectangle
+ * @property {object} color The color of the rectangle. Use an array of 3 numbers.
+ * @param {number} [x=0] The horizontal position
+ * @param {number} [y=x] The vertical position
+ * @param {number} [width=0] The width
+ * @param {number} [height=width] The height
+ * @type {Class}
+ */
 baa.rect = baa.point.extend("baa.rect");
 
 baa.rect.init = function (x,y,width,height) {
@@ -263,28 +390,43 @@ baa.rect.init = function (x,y,width,height) {
 
 	this.width = width || 0;
 	this.height = height == null ? this.width : height;
-	this._color;
+	this.color;
 }
 
+/**
+ * Draws the rectangle
+ * @param  {string} [mode="fill"] Whether to use fill, line or both when drawing
+ * @param  {number} r    How much rounding to use
+ */
 baa.rect.draw = function (mode,r) {
-	if (this._color) {
-		baa.graphics.setColor(this._color);
+	if (this.color) {
+		baa.graphics.setColor(this.color);
 	}
 	baa.graphics.rectangle(mode || "fill",this.x,this.y,this.width,this.height,r);
 }
 
-
+/**
+ * Sets new values for the rectangle
+ * @param  {number} [x=0] The horizontal position
+ * @param  {number} [y=x] The vertical position
+ * @param {number} [width=0] The width
+ * @param {number} [height=width] The height
+ * @override
+ */
 baa.rect.set = function (x,y,width,height) {
-	baa.rect.super.init(x,y);
+	baa.rect.super.set(this,x,y);
 	baa._checkType("width",width,"number",null);
 	baa._checkType("height",height,"number",null);
 
-	this.x = x;
-	this.y = y == null ? this.x : y;
-	this.width = width;
+ 	this.width = width;
 	this.height = height == null ? width : height;
 }
 
+/**
+ * Clones the values of another rectangle
+ * @param  {baa.rectangle} r The rectangle to clone from
+ * @override
+ */
 baa.rect.clone = function (r) {
 	baa._checkType("rect",r,"baa.rect");
 
@@ -294,232 +436,487 @@ baa.rect.clone = function (r) {
 	this.height = r.height;
 }
 
-baa.rect.left = function (v) {
-	baa._checkType("x",v,"number",null);
+/**
+ * Sets and returns the left side of the rectangle
+ * @param  {number} [x] The horizontal position you want the left side to be at
+ * @return {number}   The horizontal position the left side is at
+ */
+baa.rect.left = function (x) {
+	baa._checkType("x",x,"number",null);
 
-	if (v!=null) { this.x = v; }
+	if (x!=null) { this.x = x; }
 	return this.x;
 }
 
-baa.rect.right = function (v) {
-	baa._checkType("x",v,"number",null);
+/**
+ * Sets and returns the right side of the rectangle
+ * @param  {number} [x] The horizontal position you want the right side to be at
+ * @return {number}   The horizontal position the right side is at
+ */
+baa.rect.right = function (x) {
+	baa._checkType("x",x,"number",null);
 
-	if (v!=null) { this.x = v - this.width};
+	if (x!=null) { this.x = x - this.width};
 	return this.x + this.width;
 }
 
-baa.rect.top = function (v) {
-	baa._checkType("y",v,"number",null);
+/**
+ * Sets and returns the top side of the rectangle
+ * @param  {number} [y] The vertical position you want the top side to be at
+ * @return {number}   The vertical position the top side is at
+ */
+baa.rect.top = function (y) {
+	baa._checkType("y",y,"number",null);
 
-	if (v!=null) { this.y = v; }
+	if (y!=null) { this.y = y; }
 	return this.y;
 }
 
-baa.rect.bottom = function (v) {
-	baa._checkType("y",v,"number",null);
+/**
+ * Sets and returns the bottom side of the rectangle
+ * @param  {number} [y] The vertical position you want the bottom side to be at
+ * @return {number}   The vertical position the bottom side is at
+ */
+baa.rect.bottom = function (y) {
+	baa._checkType("y",y,"number",null);
 
-	if (v!=null) { this.y = v - this.height};
+	if (y!=null) { this.y = y - this.height};
 	return this.y + this.height;
 }
 
-baa.rect.xCenter = function (v) {
-	baa._checkType("x",v,"number",null);
+/**
+ * Sets and returns the horizontal center of the rectangle
+ * @param  {number} [x] The horizontal position you want the horizontal center to be at
+ * @return {number}   The horizontal position the horizontal center is at
+ */
+baa.rect.xCenter = function (x) {
+	baa._checkType("x",x,"number",null);
 
-	if (v!=null) { this.x = v - this.width/2 };
+	if (x!=null) { this.x = x - this.width/2 };
 	return this.x + this.width/2;
 }
 
-baa.rect.yCenter = function (v) {
-	baa._checkType("y",v,"number",null);
+/**
+ * Sets and returns the vertical center of the rectangle
+ * @param  {number} [y] The vertical position you want the vertical center to be at
+ * @return {number}   The vertical position the vertical center is at
+ */
+baa.rect.yCenter = function (y) {
+	baa._checkType("y",y,"number",null);
 
-	if (v!=null) { this.y = v - this.height/2 };
+	if (y!=null) { this.y = y - this.height/2 };
 	return this.y + this.height/2;
 }
 
+/**
+ * If the rectangle overlaps with another rectangle or point
+ * @param  {baa.rectangle|baa.point} r The rectangle or point you want to check overlap with
+ * @return {boolean}   If there is overlap
+ * @override
+ */
 baa.rect.overlaps = function (r) {
 	baa._checkType("rect",r,"baa.rect","baa.point");
 	return this.x + this.width > r.x && this.x < r.x + (r.width || 0) 
 		&& this.y + this.height > r.y && this.y < r.y + (r.height || 0) ;
 }
 
+/**
+ * If the rectangle overlaps horizontally with another rectangle or point
+ * @param  {baa.rectangle|baa.point} r The rectangle or point you want to check horizontal overlap with
+ * @return {boolean}   If there is horizontal overlap
+ */
 baa.rect.overlapsX = function (r) {
 	baa._checkType("rect",r,"baa.rect","baa.point");
 
 	return this.x + this.width > r.x && this.x < r.x + r.width;
 }
 
+/**
+ * If the rectangle overlaps vertically with another rectangle or point
+ * @param  {baa.rectangle|baa.point} r The rectangle or point you want to check vertical overlap with
+ * @return {boolean}   If there is vertical overlap
+ */
 baa.rect.overlapsY = function (r) {
 	baa._checkType("rect",r,"baa.rect","baa.point");
 
 	return this.y + this.height > r.y && this.y < r.y + r.height;
 }
 
+//Circle
+///////////////////////////////
+
+/**
+ * A circle class. Extends baa.point with a size
+ * @constructor
+ * @property {number} size The size of the circle
+ * @property {array} color The color of the circle. Use an array of 3 numbers.
+ * @param {number} [x=0] The horizontal position
+ * @param {number} [y=x] The vertical position
+ * @param {number} [size=0] The size
+ * @type {Class}
+ */
+baa.circle = baa.point.extend("baa.circle");
+
+baa.circle.init = function (x,y,size) {
+	baa.circle.super.init(this,x,y);
+	baa._checkType("size",size,"number",null);
+
+	this.size = size || 0;
+	this.color;
+}
+
+/**
+ * Draws the circle
+ * @param  {string} mode Wether to use fill, line or both when drawing
+ */
+baa.circle.draw = function (mode) {
+	if (this.color) {
+		baa.graphics.setColor(this.color);
+	}
+	baa.graphics.circle(mode || "fill",this.x,this.y,this.size);
+}
+
+/**
+ * Sets new values for the circle
+ * @param  {number} [x=0] The horizontal position
+ * @param  {number} [y=x] The vertical position
+ * @param {number} [size=0] The size
+ * @override
+ */
+baa.circle.set = function (x,y,size) {
+	baa.circle.super.init(x,y);
+	baa._checkType("size",size,"number",null);
+
+	this.size = size || 0;
+}
+
+/**
+ * Clones the values of another circle
+ * @param  {baa.circle} r The circle to clone from
+ * @override
+ */
+baa.circle.clone = function (c) {
+	baa._checkType("circle",c,"baa.circle");
+
+	this.x = r.x;
+	this.y = r.y;
+	this.size = r.size;
+}
+
+/**
+ * If the circle overlaps with another circle or point
+ * @param  {baa.circle|baa.point} r The circle or point you want to check overlap with
+ * @return {boolean}   If there is overlap
+ * @override
+ */
+baa.circle.overlaps = function (r) {
+	baa._checkType("circle",r,"baa.circle","baa.point");
+
+	return Math.sqrt(Math.pow(this.x - r.x,2) + Math.pow(this.y - r.y,2)) < this.size/2 + (r.size || 0)/2;
+}
+
+
 //Sprite
 //////////////////////////////
 
+/**
+ * A sprite class. Extends baa.rectangle with image and animations.
+ * @constructor
+ * @property {baa.point} origin The point the object is rotated around and scaled to
+ * @property {baa.point} offset How far the image should be drawn from the hitbox
+ * @property {baa.point} scale How much the image should scale
+ * @property {number} alpha The opacity of the sprite. Use a value between 0 and 1.
+ * @property {number} angle The angle of the image in radians
+ * @property {boolean} flip If the image should be mirrored. Useful for characters walking left and right.
+ * @property {boolean} visible If the sprite should be drawn
+ * @property {baa._image} image The image to draw
+ * @property {array} _frames The frames the sprite has and can be used to make animations with
+ * @property {object} _animations The animations that are made
+ * @property {number} _animTimer Counts up during animation and rounds up to get current frame
+ * @property {number} _animTimerDir The direction _animTimer goes to. 1 for up, -1 for down.
+ * @property {number} _currentFrame At what frame the animation currently is
+ * @property {string} _currentAnim The animation currently in use
+ * @property {boolean} _animPlaying Whether the animation is playing at the moment
+ * @property {boolean} _animEnded Whether the animation has ended
+ * @param {number} [x=0] The horizontal position
+ * @param {number} [y=x] The vertical position
+ * @param {number} [width=0] The width
+ * @param {number} [height=width] The height
+ * @type {Class}
+ */
 baa.sprite = baa.rect.extend("baa.sprite");
 
-baa.sprite.init = function (x,y) {
-	baa.sprite.super.init(this,x,y);
+baa.sprite.init = function (x,y,width,height) {
+	baa.sprite.super.init(this,x,y,width,height);
 	this.origin = baa.point.new(0,0);
 	this.offset = baa.point.new(0,0);
 	this.scale = baa.point.new(1,1);
 	this.alpha = 1;
 	this.angle = 0;
 	this.flip = false;
+	this.visible = true;
 
 	this.image;
-	this.frames = [];
-	this.animations = {}
-	this.frameTimer = 1;
-	this.frameTimerDir = 1;
-	this.currentFrame = 1;
-	this.currentAnim = "idle";
-	this.animPlaying = true;
-	this.animEnded = false;
+	this._frames = [];
+	this._animations = {}
+	this._animTimer = 1;
+	this._animTimerDir = 1;
+	this._currentFrame = 1;
+	this._currentAnim = "idle";
+	this._animPlaying = true;
+	this._animEnded = false;
 }
 
+/**
+ * Updates the sprite
+ */
 baa.sprite.update = function () {
 	this.animate();
 }
 
+/**
+ * Draws the image. If no image is assigned, it will draw a rectangle instead.
+ */
 baa.sprite.draw = function () {
-	if (this.image) {
-		baa.graphics.setAlpha(this.alpha);
-		this.image.draw(this.frames[this.currentFrame-1],
-		this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
-		this.angle,this.flip ? -this.scale.x : this.scale.x,this.scale.y,this.origin.x,this.origin.y);
-		baa.graphics.setAlpha(1);
+	if (this.visible) {
+		if (this.image) {
+			baa.graphics.setAlpha(this.alpha);
+			this.image.draw(this._frames[this._currentFrame-1],
+			this.x+this.offset.x + this.origin.x,this.y+this.offset.y + this.origin.y,
+			this.angle,this.flip ? -this.scale.x : this.scale.x,this.scale.y,this.origin.x,this.origin.y);
+			baa.graphics.setAlpha(1);
+		}
+		else {
+			baa.sprite.super.draw(this);
+		}
 	}
 }
 
-baa.sprite.centerOrigin = function () {
-	this.origin.x = this.width/2;
-	this.origin.y = this.height/2;
-}
-
+/**
+ * Sets the given image. Makes frames based on the given width and height. Automatically centers the origin based on the width and height.
+ * @example
+ * //The sprite's width and height become that of the image.
+ * this.setImage("player");
+ *
+ * //the image is cut down to smaller images, frames, that can be used for animations.
+ * this.setImage("player",16,16);
+ * @param {string} url    The url of the string
+ * @param {number} [width]  The width of the frames
+ * @param {number} [height] The height of the frames
+ * @param {boolean} [smooth] If the image should use smoothing when drawing
+ */
 baa.sprite.setImage = function (url,width,height,smooth) {
+	baa._checkType("url",url,"string");
+	baa._checkType("width",width,"number",null);
+	baa._checkType("height",height,"number",null);
+	baa._checkType("smooth",smooth,"boolean",null);
+
 	this.image = baa.graphics.newImage(url,smooth);
 	this.width = width || this.image.getWidth();
 	this.height = height || this.image.getHeight();
-	this.frames = [];
+	this._frames = [];
 	for (var i=0; i < this.image.getHeight()/this.height; i++) {
 		for (var j=0; j < this.image.getWidth()/this.width; j++) {
-			this.frames.push({x:j*this.width,y:i*this.height,width:this.width,height:this.height});
+			this._frames.push({x:j*this.width,y:i*this.height,width:this.width,height:this.height});
 		}
 	}
 	this.centerOrigin();
 }
 
-baa.sprite.addAnimation = function (name,start,finish,speed,mode,semi) {
-	this.animations[name] = {};
-	var obj = this.animations[name];
-	obj.start = start;
-	obj.finish = finish;
-	obj.speed = speed || 15;
+/**
+ * Centers the origin. This is automatically called by setImage
+ */
+baa.sprite.centerOrigin = function () {
+	this.origin.x = this.width/2;
+	this.origin.y = this.height/2;
+}
+
+/**
+ * Adds an animation
+ * @param {string} name   The name of the animation
+ * @param {number[]} frames  The frames the animation. Use numbers between 1 and the number of frames.
+ * @param {number} [speed=12]  The speed the animations plays with
+ * @param {string} [mode="loop"]   The loop mode. "loop" for looping, "once" for the animation playing only once,
+ *  and "pingpong" for the animation to go back and forth.
+ * @param {number} [semi=0]	When ended, and looping, where the frame should start from instead. 
+ * Useful for animations with a starting animation you only want to play once.   
+ */
+baa.sprite.addAnimation = function (name,frames,speed,mode,semi) {
+	baa._checkType("name",name,"string");
+	baa._checkType("frames",frames,"array");
+	baa._checkType("speed",speed,"number",null);
+	baa._checkType("mode",mode,"string",null);
+	baa._checkType("semi",semi,"number",null);
+
+	var obj = {};
+	obj.frames = frames;
+	obj.numberOfFrames = frames.length;
+	obj.speed = speed || 12;
 	obj.mode = mode || "loop";
-	if (semi==null) {
-		obj.semi = start;
-	}
-	else {
-		this.animations[name].hasSemi = true;
-		this.animations[name].semi = semi;
-	}
-		
+	obj.semi = semi || 1;
+
+	this._animations[name] = obj;
 }
 
-baa.sprite.setAnimation = function (anim) {
-	if (this.currentAnim != anim) {
-		this.currentAnim = anim;
-		this.animEnded = false;
-		this.currentAnim = this.anim;
-		this.frameTimer = this.anims[this.anim].start;
-		this.frameTimerDir = this.anims[this.anim].direction;
-	}
-}
-
+/**
+ * Handles the animating. Is automatically called by update.
+ */
 baa.sprite.animate = function () {
-	if (this.animPlaying) {
-		if (this.animations.hasOwnProperty(this.currentAnim)) {
-			var anim = this.animations[this.currentAnim];
-			if (anim.start == anim.finish) {
-				this.frameTimer = anim.start;
-				this.frame = this.frameTimer;
+	if (this._animPlaying) {
+		if (this._animations.hasOwnProperty(this._currentAnim)) {
+			var anim = this._animations[this._currentAnim];
+			if (anim.numberOfFrames == 1) {
+				this._animTimer = 0;
+				this._currentFrame = anim.frames[this._animTimer];
 				return;
 			}
+
 			if (typeof(anim.speed) == "number") {
-				this.frameTimer += dt * anim.speed * this.frameTimerDir;
+				this._animTimer += anim.speed * this._animTimerDir * dt;
 			}
 			else {
-				this.frameTimer += dt * anim.speed[this.frame] * this.frameTimerDir;
+				this._animTimer += anim.speed[this._currentFrame] * this._animTimerDir * dt;
 			}
-			if (this.frameTimer > anim.finish+1 || this.frameTimer < anim.start) {
+
+			if (this._animTimer > anim.numberOfFrames+1 || this._animTimer < 1) {
 				if (anim.mode == "loop") {
-					this.frameTimer = anim.semi;
-					if (anim.hasSemi) {
-						this.animEnded = true;
-					}
+					this._animTimer = anim.semi;
+					this._animEnded = true;
 				}
 				else if (anim.mode == "once") {
-					this.frameTimer = anim.finish;
-					this.animPlaying = false;
-					this.animEnded = true;
+					this._animTimer = anim.finish;
+					this._animPlaying = false;
+					this._animEnded = true;
 				}
 				else if (anim.mode == "pingpong") {
-					this.frameTimer = this.frameTimeDir > 0 ? anim.finish : anim.start;
-					this.frameTimerDir = -this.frameTimerDir;
+					this._animTimer = this._animTimerDir > 0 ? anim.numberOfFrames : 2;
+					this._animTimerDir = -this._animTimerDir;
 				}
 			}
-			this.currentFrame = Math.floor(this.frameTimer);
+
+			this._currentFrame = anim.frames[Math.floor(this._animTimer)-1];
 		}
 	}
 }
 
+/**
+ * Plays the animation
+ */
 baa.sprite.playAnimation = function () {
-	this.animPlaying = true;
+	this._animPlaying = true;
 }
 
+/**
+ * Pauses the animation
+ */
 baa.sprite.pauseAnimation = function () {
-	this.animPlaying = false;
+	this._animPlaying = false;
 }
 
+/**
+ * Stops the animation, and goes back to the first frame.
+ */
 baa.sprite.stopAnimation = function () {
-	this.animPlaying = false;
-	this.setFrame(1);
-	this.animEnded = false;
+	this._animPlaying = false;
+	this.setAnimationFrame(1);
 }
 
+/**
+ * Sets the frame to 1, and plays the animation.
+ */
 baa.sprite.replayAnimation = function () {
-	this.animPlaying = true;
-	this.setFrame(1);
-	this.animEnded = false;
+	this._animPlaying = true;
+	this.setAnimationFrame(1);
+	this._animEnded = false;
 }
 
+/**
+ * Whether the animation has ended
+ */
 baa.sprite.hasAnimationEnded = function () {
-	return this.animEnded;
+	return this._animEnded;
 }
 
+/**
+ * Whether the animation is playing
+ */
 baa.sprite.isAnimationPlaying = function () {
-	return this.animPlaying;
+	return this._animPlaying;
 }
 
-baa.sprite.getAnimationFrame = function () {
-	return this.frame - this.anims[this.currentAnim].start+1;
-}
+/**
+ * Sets the animation to be played. Has no effect when the current animation is the same as the given one. Unless you use force.
+ * @param {string} anim  The name of the animation
+ * @param {boolean} force Forces the animation to be set to the given animation, even when the current animiation is already the given one.
+ */
+baa.sprite.setAnimation = function (anim, force) {
+	baa._checkType("anim",anim,"string");
+	baa._checkType("force",force,"boolean",null);
 
-baa.sprite.setAnimationFrame = function (f) {
-	var anim = this.animations[this.currentAnim];
-	if (anim.finish - anim.start < f) {
-		throw("There are only " + anim.finish - anim.start + " frames. Not " + f);
+	if (this._currentAnim != anim || force) {
+		this._currentAnim = anim;
+		this._animEnded = false;
+		this._frameTimer = this._animations[anim].start;
+		this._frameTimerDir = 1;
 	}
-	this.frame = anim.start + f;
-	this.frameTimer = this.frame;
 }
+
+/**
+ * Returns the name of the current animation
+ * @return {string} The current animation
+
+ */
+baa.sprite.getAnimation = function () {
+	return this._currentAnim;
+}
+
+/**
+ * Sets the frame of the animation
+ * @throws {Error} If frame is higher than the number of frames the current animation has.
+ * @param {number} frame The frame to set
+ */
+baa.sprite.setAnimationFrame = function (frame) {
+	baa._checkType("frame",frame,"number");
+
+	var anim = this._animations[this._currentAnim];
+	if (anim.numberOfFrames < frame) {
+		throw("There are only " + anim.numberOfFrames +" frames. Not " + frame);
+	}
+	this._currentFrame = frame;
+	this._frameTimer = frame;
+}
+
+/**
+ * Returns the current frame
+ * @return {number} The current frame
+ */
+baa.sprite.getAnimationFrame = function () {
+	return this._currentFrame;
+}
+
+//TODO: Maybe seperate animation from sprite, to be its own class
+
 
 
 //Entity
 //////////////////////////////
 
+/**
+ * An entity class. Extends baa.sprite with collision-handling and movement.
+ * @constructor
+ * @property {baa.rect} last The previous values of the entity. Useful for checking direction.
+ * @property {baa.point} velocity The velocity the entity moves with
+ * @property {baa.point} accel The amount the entity accelerates with. The higher the value, the fast the entity accelerates.
+ * @property {baa.point} drag The amount of drag the entity has. Is only used when accel[axis] is 0. The higher the value, the faster the entity slows down. 
+ * @property {baa.point} bounce How much the entity should bounce when colliding. 2 would make it go twice as fast.
+ * @property {number} separatePriority This decides which of the colliding entities will be moved from it's original position. The lower priority will be moved.
+ * @property {boolean} solid If false, the entity will not handle collision, and is not effected by other solid objects.
+ * @property {boolean} dead If true, the entity wil lstop updating and drawing, and has no collision anymore with other entities. 
+ * @param {number} [x=0] The horizontal position
+ * @param {number} [y=x] The vertical position
+ * @param {number} [width=0] The width
+ * @param {number} [height=width] The height
+ */
 baa.entity = baa.sprite.extend("baa.entity");
 
 baa.entity.init = function (x,y,w,h) {
@@ -531,27 +928,32 @@ baa.entity.init = function (x,y,w,h) {
 	this.drag = baa.point.new();
 	this.bounce = baa.point.new();
 
-
 	this.separatePriority = 0;
 	this.solid = true;
 	this.dead = false;
-
-	this.once = baa.once.new(this);
 }
 
+/**
+ * Updates the entity
+ */
 baa.entity.update = function () {
 	baa.entity.super.update(this);
 	this.updateMovement();
 }
 
+/**
+ * Draws the entity. If baa.debug is active, it will call baa.entity.drawDebug as well.
+ */
 baa.entity.draw = function () {
 	baa.entity.super.draw(this);
 	if (baa.debug && baa.debug.active) {
 		this.drawDebug();
 	}
-
 }
 
+/**
+ * Draws debug lines. This is called when baa.debug is active.
+ */
 baa.entity.drawDebug = function () {
 	baa.graphics.setAlpha(1);
 	baa.graphics.setLineWidth(2);
@@ -559,6 +961,9 @@ baa.entity.drawDebug = function () {
 	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height);
 }
 
+/**
+ * Updates the movement. Acceleration is added to the velocity. The position moves with velocity, and the velocity is lowered with drag.
+ */
 baa.entity.updateMovement = function () {
 	this.last.clone(this);
 
@@ -594,28 +999,49 @@ baa.entity.updateMovement = function () {
 	}
 }
 
+/**
+ * Checks if there is collision with the given entity, and calls baa.entity.onOverlap if so.
+ * @param  {baa.entity} e The entity you want to check collision with
+ */
 baa.entity.resolveCollision = function (e) {
 	if (this.overlaps(e)) {
 		this.onOverlap(e);
 	}
 }
 
+/**
+ * Extends baa.rect.overlaps by checking if both entities aren't dead.
+ * @param  {baa.entity} e The entity you want to check collision with
+ * @return {boolean}   If there is collision
+ */
 baa.entity.overlaps = function (e) {
 	return this!= e && !this.dead && !e.dead && baa.entity.super.overlaps(this,e);
 }
 
+/**
+ * Called by baa.entity.resolveCollision when there is overlap. Calls baa.entity.separate if both entities are solid.
+ * @param  {baa.entity} e The entity there is overlap with
+ */
 baa.entity.onOverlap = function (e) {
-	// if (this.solid && e.solid && this.separatePriority != e.separatePriority) {
 	if (this.solid && e.solid) {
 		this.separate(e);
-		return true;
 	} 
 }
 
+/**
+ * Calls baa.entity.separateAxis. This wrapper handles the arguments it gives by checking if there was also overlap with this.last and e.last.
+ * @param  {baa.entity} e The entity to separate from
+ * @return {[type]}   [description]
+ */
 baa.entity.separate = function (e) {
 	this.separateAxis(e, this.last.overlapsY(e.last) ? "x" : "y");
 }
 
+/**
+ * Separates itself from the collided entity, or the other way around, based on their separatePriority.
+ * @param  {baa.entity} e The entity to separate from
+ * @param  {string} a The axis used to seperate from the entity
+ */
 baa.entity.separateAxis = function (e, a) {
 	var s = (a == "x") ? "width" : "height";
 	if (this.separatePriority >= e.separatePriority) {
@@ -632,41 +1058,192 @@ baa.entity.separateAxis = function (e, a) {
 	}
 }
 
+
+//Button
+//////////////////////////////
+
+/**
+ * A button that can call functions when you click on it. You can make the shape of the button either squared or round.
+ * By default, buttons won't activate until you release them.
+ * @constructor
+ * @property {string} shape The shape of the button. The default shape can be set by changing baa.button.defaultShape.
+ * @property {boolean} hold If the button is currently hold down.
+ * @property {object} obj The object that is used for calling the function.
+ * @property {function|string} func The function you want to call when the button is pressed.
+ * @property {function|string} func The function you want to call when the button is pressed.
+*  @property {boolean} [onRelease=true] If the button should be activated on release. If this is false, it will be activated on press.
+*  @property {string|array} [buttons="l"] What button(s) can activate this button.
+ * This can either be the name of the function as string, or a function on its own.
+ * @param {number} x The horizontal position of the button. 
+ * @param {number} y The vertical position of the button.
+ * @param {object} [obj] The object that is used for calling the function.
+ * @param {function|string} [func] The function you want to call when the button is pressed.
+ * This can either be the name of the function as string, or a function on its own. 
+ * @param {string} [shape] The shape of the button. The default shape can be set by changing baa.button.defaultShape.
+ * @param {boolean} [onRelease=true] If the button should be activated on release. If this is false, it will be activated on press. 
+ */
 baa.button = baa.sprite.extend("baa.button");
 
-baa.button.init = function (x,y) {
+/**
+ * The default shape. This is normally "rectangle", but can be changed to "circle" if you have a lot of round buttons.
+ */
+baa.button.defaultShape = "rectangle";
+
+baa.button.init = function (x,y,obj,func,shape,onRelease,buttons) {
 	baa.button.super.init(this,x,y);
+	baa._checkType("object",obj,"object");
+	baa._checkType("function",func,"function","string");
+	baa._checkType("shape",shape,"string",null);
+	this.shape = shape || baa.button.defaultShape;
+	this.hold = false;
+	this.obj = obj;
+	this.func = func;
+	this.onRelease = onRelease || true;
+	this.buttons = buttons || "l";
 }
 
+/**
+ * Updates the button
+ */
 baa.button.update = function () {
+	baa.button.super.update(this);
 	if (this.overlaps(baa.mouse)) {
-		baa.mouse.setCursor("hand")
+		baa.mouse.setCursor("hand");
+		this.setAnimation("hover");
+		if (baa.mouse.isPressed("l")) {
+			this.hold = true;
+		}
 	}
+	else {
+		this.setAnimation("idle");
+	}
+
+	if (this.hold) {
+		this.setAnimation("hold");
+	}
+
+	if ( ( this.onRelease && baa.mouse.isReleased("l") ) || (!this.onRelease && baa.mouse.isPressed("l")) ) {
+		if (this.hold && this.overlaps(baa.mouse)) {
+			this._active();
+			this.setAnimation("active");
+		}
+		this.hold = false;
+	} 
 }
 
-//TODO: FINISH THIS!
+/**
+ * Sets an image. The frames will be used to create the following animations:
+ * "idle", when the mouse is not on the button. "hover", when you're hovering over the button.
+ * "hold", when you're holding your mouse down on the button.  "release", when you release the button.
+ * @param {string} url    The name of image.
+ * @param {number} width  The width of each frame.
+ * @param {nubmer} height The height of each frame.
+ */
+baa.button.setImage = function (url,width,height) {
+	baa.button.super.setImage(this,url,width,height);
+	if (this.shape == "circle") {
+		this.offset.x = -this.origin.x;
+		this.offset.y = -this.origin.y;
+	}
 
+	var a1, a2, a3;
+	a1 = this._frames.length > 1 ? 2 : 1;
+	a2 = this._frames.length > 2 ? 3 : a1;
+	a3 = this._frames.length > 3 ? 4 : a2;
+	
+	this.addAnimation("idle",1,1);
+	this.addAnimation("hover",a1,a1);
+	this.addAnimation("hold",a2,a2);
+	this.addAnimation("active",a3,a3);
+}
 
-
+/**
+ * This is called when the button is clicked, and calls the function that is set.
+ */
+baa.button._active = function () {
+	baa.util.call(this.obj,this.func);
+}
 
 ///////////////////////////////
 ///////////////////////////////
 
 //Graphics
-baa.graphics = {};
-baa.graphics._defaultCtx;
-baa.graphics._defaultCanvas;
-baa.graphics._defaultSmooth = false;
-baa.graphics._currentCanvas;
-baa.graphics._images = {};
-baa.graphics._color = {r:255,g:255,b:255,a:255};
-baa.graphics._backgroundColor = {r:0,g:0,b:0};
-baa.graphics._currentFont;
-baa.graphics.width;
-baa.graphics.height;
 
-baa.graphics.preload = function () {
-	var ext = "." + arguments[0];
+/**
+ * Handles everything you see on the screen
+ * @constructor
+ * @type {object}
+ */
+baa.graphics = {};
+
+/**
+ * The default context
+ * @type {object}
+ */
+baa.graphics._defaultCtx = null;
+
+/**
+ * The default canvas
+ * @type {object}
+ */
+baa.graphics._defaultCanvas = null;
+
+/**
+ * The default smoothing
+ * @type {boolean}
+ */
+baa.graphics._defaultSmooth = false;
+
+/**
+ * The current canvas
+ * @type {object}
+ */
+baa.graphics._currentCanvas = null;
+
+/**
+ * All the preloaded images
+ * @see  baa.graphics.preload
+ * @type {object}
+ */
+baa.graphics._images = {};
+
+/**
+ * The color to use with drawing
+ * @see  baa.graphics.setColor
+ * @type {object}
+ */
+baa.graphics._color = {r:255,g:255,b:255,a:1};
+
+/**
+ * The background color
+ * @see  baa.graphics.setBackgroundColor
+ * @type {object}
+ */
+baa.graphics._backgroundColor = {r:0,g:0,b:0};
+
+/**
+ * The current font
+ * @type {baa.graphics._font}
+ */
+baa.graphics._currentFont = null;
+
+/**
+ * The width of the canvas
+ */
+baa.graphics.width = 0;
+
+/**
+ * The height of the canvas
+ */
+baa.graphics.height = 0;
+
+/**
+ * Use this to preload images. Assumes all images are in the folder images/
+ * @param {string} ext The extension of the images. Examples: "png", "gif", "jpg"
+ * @param {string} ... Names of the images. Example: "player", "logo", "enemy" NOT: "images/player.png", "images/logo", "enemy.png"
+ */
+baa.graphics.preload = function (ext) {
+	var ext = "." + ext
 	for (var i = 1; i < arguments.length; i++) {
 		var name = arguments[i];
 		var img;
@@ -683,6 +1260,15 @@ baa.graphics.preload = function () {
 
 //Drawing functions
 
+/**
+ * Draws a rectangle
+ * @param  {string} mode Whether to draw the rectangle filled, in lines, or both.
+ * @param  {number|baa.rectangle} x    The horizontal position OR an object of type baa.rect. Using an object changes y in r, and ignores the other arguments.
+ * @param  {number} [y]    The vertical position
+ * @param  {number} [w]    The width
+ * @param  {number} [h]    The height
+ * @param  {number} [r]    The rounding
+ */
 baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number","baa.rect");
@@ -730,9 +1316,23 @@ baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Draws a circle
+ * @param  {string} mode Whether to draw the circle filled, in lines, or both.
+ * @param  {number|baa.circle} x    The horizontal position OR an object of type baa.circle. Using an object ignores the other arguments.
+ * @param  {number} y    The vertical position
+ * @param  {number} r    The radius of the circle
+ */
 baa.graphics.circle = function (mode,x,y,r) {
 	baa._checkType("mode",mode,"string");
-	baa._checkType("x",x,"number");
+	baa._checkType("x",x,"number","baa.circle");
+
+	if (Class.isClass(x) && x.is(baa.circle)) {
+		y = x.y;
+		r = x.size;
+		x = x.x;
+	}
+
 	baa._checkType("y",y,"number");
 	baa._checkType("r",r,"number");
 
@@ -744,7 +1344,16 @@ baa.graphics.circle = function (mode,x,y,r) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
-baa.graphics.convex = function (mode,x,y,r,p) {
+/**
+ * Draws a convex
+ * @param  {string} mode Whether to draw the convex filled, in lines, or both.
+ * @param  {number} x    The horizontal position
+ * @param  {number} y    The vertical position
+ * @param  {number} r    The radius of the convex
+ * @param  {number} p 	 The number of points the convex should have
+ * @param  {number} rot  The rotation of the convex in radians
+ */
+baa.graphics.convex = function (mode,x,y,r,p,rot) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number");
 	baa._checkType("y",y,"number");
@@ -754,16 +1363,26 @@ baa.graphics.convex = function (mode,x,y,r,p) {
 	p = Math.max(3,p);
 	this.ctx.beginPath();
 	for (var i = 0; i < p; i++) {
-		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r,
-						y+Math.sin((i*(360/p))/180 *Math.PI)*r);
+		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + rot)*r,
+						y+Math.sin((i*(360/p))/180 *Math.PI + rot)*r);
 	}
-	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI)*r,
-					y+Math.sin((i*(360/p))/180 *Math.PI)*r);
+	this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + rot)*r,
+					y+Math.sin((i*(360/p))/180 *Math.PI + rot)*r);
 	this._mode(mode);
 
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Draws a star
+ * @param  {string} mode Whether to draw the star filled, in lines, or both.
+ * @param  {number} x    The horizontal position
+ * @param  {number} y    The vertical position
+ * @param  {number} r1   The inner radius
+ * @param  {number} r2   The outer radius
+ * @param  {number} p    The number of points the star should have
+ * @param  {number} r    The rotation of the star in radians
+ */
 baa.graphics.star = function (mode,x,y,r1,r2,p,r) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number");
@@ -794,6 +1413,15 @@ baa.graphics.star = function (mode,x,y,r1,r2,p,r) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Draws an arc, a part of a circle
+ * @param  {string} mode Whether to draw the arc filled, in lines, or both.
+ * @param  {number} x    The horizontal position
+ * @param  {number} y    The vertical position
+ * @param  {number} r    The radius of the arc
+ * @param  {number} a1   The start of the arc
+ * @param  {number} a2   The end of the arc
+ */
 baa.graphics.arc = function (mode,x,y,r,a1,a2) {
 	baa._checkType("mode",mode,"string");
 	baa._checkType("x",x,"number");
@@ -811,9 +1439,12 @@ baa.graphics.arc = function (mode,x,y,r,a1,a2) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
-
+/**
+ * Draws a line
+ * @param {array|number} points An array of numbers, x and y alternately, or a number, assuming all numbers are in arguments.
+ * @param {number} ... The x and y of the points the lines goes to alternately
+ */
 baa.graphics.line = function () {
-
 	this.ctx.beginPath();
 	if (typeof(arguments[0]) == "object") {
 		var verts = arguments[0];
@@ -849,6 +1480,12 @@ baa.graphics.line = function () {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Draws a polygon
+ * @param  {string} mode Whether to draw the polygon filled, in lines, or both.
+ * @param {array|number} points An array of numbers, x and y alternately, or a number, assuming all numbers are in arguments.
+ * @param {number} ... The x and y of the points the polygon goes to alternately
+ */
 baa.graphics.polygon = function (mode) {
 	baa._checkType("mode",mode,"string");
 	this.ctx.beginPath();
@@ -887,14 +1524,35 @@ baa.graphics.polygon = function (mode) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Clears the canvas, and draws the background
+ */
 baa.graphics.clear = function () {
+	this.push();
+	this.origin();
 	this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.b,this._backgroundColor.g);
-	this._background();
+	this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 	this.ctx.fillStyle = this._rgb(this._color.r,this._color.b,this._color.g);
-
+	this.pop();
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Draws text. If the second argument is a string, it will use alignment, else, it will assume the first argument is x.
+ * @param  {string} t     The text to draw
+ * @param  {string} [align] Use this for text-alignment. Options: "left", "center" and "right". 
+ * Using a number here will take this argument as x, will take limit as y, and shift all the arguments.
+ * @param  {string} [limit] [description]
+ * @param  {number} [x=0]     The horizontal position
+ * @param  {number} [y=x]     The vertical position
+ * @param  {number} [r=0]     The rotation in radians
+ * @param  {number} [sx=0]    The horizontal scaling
+ * @param  {number} [sy=sx]    The vertical scaling
+ * @param  {number} [ox=0]    The horizontal origin. The origin point is from where the text rotates and scales.
+ * @param  {number} [oy=ox]    The vertical origin. The origin point is from where the text rotates and scales.
+ * @param  {number} [kx=0]    The horizontal shearing factor
+ * @param  {number} [ky=kx]    The vertical shearing factor
+ */
 baa.graphics.print = function (t,align,limit,x,y,r,sx,sy,ox,oy,kx,ky) {
 	if (typeof(align) == "number") {
 		this._print(t,"left",align,limit,x,y,r,sx,sy,ox,oy);
@@ -906,6 +1564,9 @@ baa.graphics.print = function (t,align,limit,x,y,r,sx,sy,ox,oy,kx,ky) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Psst, baa.graphics.print is actually a wrapper, to call this function with the correct arguments. But don't tell anyone.
+ */
 baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
 	baa._checkType("text",t,"string","number",null);
 	baa._checkType("align",align,"string",null);
@@ -966,10 +1627,23 @@ baa.graphics._print = function (t,align,x,y,r,sx,sy,ox,oy,kx,ky,limit) {
 	this.ctx.textAlign="left";
 }
 
-
+/**
+ * Draws an image. If the second argument is an object, a quad, it will draw only part of the image. Else, it will assume the second argument is x.
+ * @throws {Error} If img is a non-existing image.
+ * @param  {baa.graphics._image|string} img  The image you want draw, or a string of the name of the image.
+ * @param  {object} [quad] An object with an x, y, width and height. 0, 0, 32, 32 would be the top left part of the image, and a 32x32 rectangle. 
+ * Using a number here will take this argument as x, and shift all the arguments.  
+ * @param  {number} [x=0]     The horizontal position
+ * @param  {number} [y=x]     The vertical position
+ * @param  {number} [r=0]     The rotation in radians
+ * @param  {number} [sx=0]    The horizontal scaling
+ * @param  {number} [sy=sx]    The vertical scaling
+ * @param  {number} [ox=0]    The horizontal origin. The origin point is from where the text rotates and scales.
+ * @param  {number} [oy=ox]    The vertical origin. The origin point is from where the text rotates and scales.
+ * @param  {number} [kx=0]    The horizontal shearing factor
+ * @param  {number} [ky=kx]    The vertical shearing factor
+ */
 baa.graphics.draw = function (img,quad,x,y,r,sx,sy,ox,oy,kx,ky) {
-	
-
 	if (typeof(quad) != "object") {
 		this._draw(img,quad,x,y,r,sx,sy,ox,oy,kx,ky);
 	}
@@ -980,6 +1654,9 @@ baa.graphics.draw = function (img,quad,x,y,r,sx,sy,ox,oy,kx,ky) {
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
 
+/**
+ * Psst, baa.graphics.draw is actually a wrapper, to call this function with the correct arguments. But don't tell anyone.
+ */
 baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	baa._checkType("image",img,"baa.graphics.image","string");
 	baa._checkType("x",x,"number",null);
@@ -995,7 +1672,7 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 	
 	var url = typeof(img) == "string" ? img : img.url;
 	if (this._images[url]==null) {
-		throw("Image doesn't exist. Did you forget to preload it?");
+		throw("The image " + img + " doesn't exist. Did you forget to preload it?");
 	}
 
 	x = x == null ? 0 : x;
@@ -1032,6 +1709,15 @@ baa.graphics._draw = function (img,x,y,r,sx,sy,ox,oy,kx,ky,quad) {
 //image
 ///////////////////
 
+/**
+ * An image object. Makes it able to read data of the image, and set smoothing for specific images.
+ * @constructor
+ * @throws {Error} If url is a non-existing image.
+ * @param {string} url The url of the image
+ * @param {boolean} [smooth=null] The smoothing of the image.
+ * @property {string} url The url of the image.
+ * @property {boolean} smooth The smoothing of the image. If this is null, default smoothing will be used instead. This can be set with baa.graphics.setSmooth.
+ */
 baa.graphics._image = Class.extend("baa.graphics.image");
 
 baa.graphics._image.init = function (url,smooth) {
@@ -1042,27 +1728,52 @@ baa.graphics._image.init = function (url,smooth) {
 	this.smooth = smooth;
 }
 
+/**
+ * Draws the image.
+ * @see  baa.graphics.draw
+ */
 baa.graphics._image.draw = function (quad,x,y,r,sx,sy,ox,oy,kx,ky) {
 	baa.graphics.draw(this,quad,x,y,r,sx,sy,ox,oy,kx,ky);
 }
 
+/**
+ * Sets the smoothing of the image
+ * @param {boolean} smooth If the image should use smoothing or not.
+ */
 baa.graphics._image.setSmooth = function (smooth) {
 	baa._checkType("smooth",smooth,"boolean",null);
 	return this.smooth = smooth;
 }
 
+/**
+ * Returns the current smoothing of the image. Returns null if no smoothing is assigned yet.
+ * @return {boolean|null} The smoothing of the image
+ */
 baa.graphics._image.getSmooth = function () {
 	return this.smooth;
 }
 
+/**
+ * Returns the width of the image.
+ * @return {number} The width of the image.
+ */
 baa.graphics._image.getWidth = function () {
 	return baa.graphics._images[this.url].width;
 }
 
+/**
+ * Returns the height of the image.
+ * @return {number} The height of the image.
+ */
 baa.graphics._image.getHeight = function () {
 	return baa.graphics._images[this.url].height;
 }
 
+/**
+ * Creates a new image. This is used to keep image a private object.
+ * @see  baa.graphics._image
+ * @return {baa.graphics._image} The new image
+ */
 baa.graphics.newImage = function (url,smooth) {
 	return this._image.new(url, smooth);
 }
@@ -1071,6 +1782,28 @@ baa.graphics.newImage = function (url,smooth) {
 //font
 /////////////////
 
+/**
+ * A font object. Allows you to set the size and height of a font. Fonts are loaded in CSS.
+ * @example
+ *  <style>
+ *  @font-face {
+ *      font-family: "score";
+ *      src: url(fonts/score.otf);
+ *  }
+ *  </style>
+ *
+ * baa.graphics.newFont("score",12);
+ * @constructor
+ * @alias baa.graphics.font
+ * @param {string} name The name of the font.
+ * @param {number} size The size of the font.
+ * @param {string} [style="normal"] The style of the font. Options: "normal", "italic" and "oblique".
+ * @param {number} [height=size*2]  The height of the font. This will be used when using alignment and limit for multilining.
+ * @property {string} name The name of the font.
+ * @property {number} size The size of the font.
+ * @property {string} style The style of the font. Options: "normal", "italic" and "oblique".
+ * @property {number} height  The height of the font. This will be used when using alignment and limit for multilining.
+ */
 baa.graphics._font = Class.extend("baa.graphics.font");
 
 baa.graphics._font.init = function (name,size,style,height) {
@@ -1085,6 +1818,10 @@ baa.graphics._font.init = function (name,size,style,height) {
 	this.height = height==null ? size*2 : height;
 }
 
+/**
+ * Sets the size of the font
+ * @param {number} size The size of the font
+ */
 baa.graphics._font.setSize = function (size) {
 	baa._checkType("size",size,"number");
 	this.size = size;
@@ -1092,10 +1829,18 @@ baa.graphics._font.setSize = function (size) {
 	return this.size;
 }
 
+/**
+ * Returns the size of the font
+ * @return {number} The size of the font
+ */
 baa.graphics._font.getSize = function () {
 	return this.size;
 }
 
+/**
+ * Sets the height of the font
+ * @param {number} height The height of the font
+ */
 baa.graphics._font.setHeight = function (height) {
 	baa._checkType("height",height,"number");
 	this.height = height;
@@ -1103,10 +1848,19 @@ baa.graphics._font.setHeight = function (height) {
 	return this.height;
 }
 
+/**
+ * Returns the height of the font
+ * @return {number} The height of the font
+ */
 baa.graphics._font.getHeight = function () {
 	return this.height;
 }
 
+/**
+ * Creates a new font. This is used to keep font a private object.
+ * @see  baa.graphics._image
+ * @return {baa.graphics._image} The new image
+ */
 baa.graphics.newFont = function (name,size,style,height) {
 	return this._font.new(name,size,style,height);
 }
@@ -1115,58 +1869,92 @@ baa.graphics.newFont = function (name,size,style,height) {
 //Canvas
 /////////////////
 
+/**
+ * Everything is drawn on a canvas. You can create your own canvas, draw stuff on that canvas, and then draw the canvas on the real canvas.
+ * @constructor
+ * @param {number} width The width of the canvas.
+ * @param {number} height The height of the canvas.
+ * @param {boolean} smooth If the cnavas should draw everything smooth on default.
+ * @property {object} drawable The canvas itself.
+ * @property {object} context The context of drawable. This is used to draw everything on the canvas.
+ * @property {boolean} [smooth=false] If the canvas should draw everything smooth on default.  
+ */
 baa.graphics._canvas = Class.extend("baa.graphics.canvas");
 
 baa.graphics._canvas.init = function (width,height,smooth) {
 	baa._checkType("width",width,"number");
 	baa._checkType("height",height,"number");
-	baa._checkType("smooth",smooth,"boolean");
+	baa._checkType("smooth",smooth,"boolean",null);
 
 	this.drawable = document.createElement('canvas');
 	this.context = this.drawable.getContext('2d');
-	this.smooth = true;
+	this.smooth = smooth || false;
 	width = Math.max(0,width);
 	height = Math.max(0,height);
 	this.drawable.width = width;
 	this.drawable.height = height;
 }
 
+/**
+ * Returns the width of the canvas.
+ * @return {number} The width of the canvas.
+ */
 baa.graphics._canvas.getWidth = function () {
 	return this.drawable.width;
 }
 
+/**
+ * Returns the height of the canvas.
+ * @return {number} The height of the canvas.
+ */
 baa.graphics._canvas.getHeight = function () {
 	return this.drawable.height;
 }
 
+/**
+ * Sets the width of the canvas
+ * @param {number} width The width of the canvas
+ */
 baa.graphics._canvas.setWidth = function (width) {
 	baa._checkType("width",width,"number");
 	width = Math.max(0,width);
 	return this.drawable.width = width;
 }
 
-// baa.graphics._canvas.addWidth = function () {
-// //!!
-// }
-
-
+/**
+ * Sets the height of the canvas
+ * @param {number} height The height of the canvas
+ */
 baa.graphics._canvas.setHeight = function (height) {
 	baa._checkType("height",height,"number");
 	height = Math.max(0,height);
 	return this.drawable.height = height;
 }
 
+/**
+ * Sets the default smoothing of the canvas
+ * @param {boolean} smooth The default smoothing of the canvas
+ */
 baa.graphics._canvas.setSmooth = function (smooth) {
 	baa._checkType("smooth",smooth,"boolean");
 	return this.smooth = smooth;
 }
 
+/**
+ * Returns the default smoothing of the canvas
+ * @return {boolean} The default smoothing of the canvas
+ */
 baa.graphics._canvas.getSmooth = function () {
 	return this.smooth;
 }
 
-baa.graphics.newCanvas = function (width,height) {
-	return this._canvas.new(width,height);
+/**
+ * Creates a new canvas. This is used to keep canvas a private object.
+ * @see  baa.graphics._canvas
+ * @return {baa.graphics._canvas} The new canvas
+ */
+baa.graphics.newCanvas = function (width,height,smooth) {
+	return this._canvas.new(width,height,smooth);
 }
 
 ////////////////
@@ -1174,11 +1962,22 @@ baa.graphics.newCanvas = function (width,height) {
 
 //Set functions
 
+/**
+ * Sets the default smoothing.
+ * @param {boolean} smooth The default smoothing.
+ */
 baa.graphics.setSmooth = function (smooth) {
 	baa._checkType("smooth",smooth,"boolean");
 	this._defaultSmooth = smooth;
 }
 
+/**
+ * Sets the color the canvas uses to draw geometry. r, g, and b use numbers between 0 and 255. a (for alpha), uses a number between 0 and 1.
+ * @param {number|array} r Red. If this is an array, the function assumes all numbers are in that array, and disregard all the other arguments.
+ * @param {number} g Green.
+ * @param {number} b Blue.
+ * @param {number} a Alpha
+ */
 baa.graphics.setColor = function (r,g,b,a) {
 	if (a && a > 1) { print("Warning: Alpha uses 0 to 1, not 0 to 255!"); }
 	if (typeof(r)=="object") {
@@ -1207,13 +2006,23 @@ baa.graphics.setColor = function (r,g,b,a) {
 	this.ctx.globalAlpha = this._color.a;
 }
 
+/**
+ * Sets the alpha the canvas uses to draw geometry and images.
+ * @param {number} a The alpha, a number between 0 and 1.
+ */
 baa.graphics.setAlpha = function (a) {
 	baa._checkType("alpha",a,"number");
 
 	this._color.a = Math.min(1,Math.max(0,a));
-	return this.ctx.globalAlpha = a;
+	return this.ctx.globalAlpha = this._color.a;
 }
 
+/**
+ * The same as setColor, except for the background. The background color can have no alpha. Uses numbers between 0 and 255.
+ * @param {number|array} r Red. If this is an array, the function assumes all numbers are in that array, and disregard all the other arguments.
+ * @param {number} g Green.
+ * @param {number} b Blue.
+ */
 baa.graphics.setBackgroundColor = function (r,g,b) {
 	if (typeof(r)=="object") {
 		baa._checkType("red",r[0],"number",null);
@@ -1235,18 +2044,31 @@ baa.graphics.setBackgroundColor = function (r,g,b) {
 	}
 }
 
+/**
+ * Sets the line width the canvas uses to draw geometry. Is standard on 1.
+ * @param {number} width The width of line.
+ */
 baa.graphics.setLineWidth = function (width) {
 	baa._checkType("width",width,"number",null);
 
 	this.ctx.lineWidth = width;
 }
 
+/**
+ * Combines baa.graphics.newFont and baa.graphics.setFont to be able to create and set a new font at the same time
+ * @see baa.graphics.newFont
+ * @see baa.graphics.setfont
+ */
 baa.graphics.setNewFont = function (fnt,size,style,height) {
 	fnt = this.newFont(fnt,size,style,height);
 	this.setFont(fnt);
 	return fnt;
 }
 
+/**
+ * Sets a font the canvas uses for printing text.
+ * @param {baa.graphics._font} fnt The font to set
+ */
 baa.graphics.setFont = function (fnt) {
 	baa._checkType("font",fnt,"baa.graphics.font");
 
@@ -1255,12 +2077,23 @@ baa.graphics.setFont = function (fnt) {
 
 }
 
+/**
+ * Sets the blend mode of the canvas. 
+ * Options: "source-over", "source-in", "source-out", "source-atop", "destination-over", 
+ * "destination-in", "destination-out", "destination-atop", "lighter", "darker", "copy", and "xor".
+ * @param {string} mode the blend mode to set.
+ */
 baa.graphics.setBlendMode = function (mode) {
 	baa._checkType("mode",mode,"string");
 
 	this.ctx.globalCompositeOperation = mode;
 }
 
+/**
+ * Sets the canvas all future draw operations will be drawn on.
+ * @see  baa.graphics._canvas
+ * @param {baa.graphics._canvas} cvs The canvas to set
+ */
 baa.graphics.setCanvas = function (cvs) {
 	baa._checkType("canvas",cvs,"baa.graphics.canvas",null);
 
@@ -1276,11 +2109,22 @@ baa.graphics.setCanvas = function (cvs) {
 	}
 }
 
-baa.graphics.setScissor = function (x,y,w,h) {
+/**
+ * Sets a rectangle on the canvas, that cuts off all graphics outside that box.
+ * @param {number|null} x The horizontal position of the scissor. If this is null, it will remove the current scissor.
+ * @param {number} y The vertical position of the scissor.
+ * @param {number} width The width of the scissor
+ * @param {number} height The height of the scissor
+ */
+baa.graphics.setScissor = function (x,y,width,height) {
 	if (x!=null) {
+		baa._checkType("x",x,"number");
+		baa._checkType("y",x,"number");
+		baa._checkType("width",width,"number");
+		baa._checkType("height",height,"number");
 		this.push();
 		this.ctx.beginPath();
-		this.ctx.rect(x,y,w,h);
+		this.ctx.rect(x,y,width,height);
 		this.ctx.closePath();
 		this.ctx.clip();
 	}
@@ -1292,53 +2136,102 @@ baa.graphics.setScissor = function (x,y,w,h) {
 
 //Get functions
 
+/**
+ * Returns the default smoothing of the default canvas.
+ * @return {[type]} [description]
+ */
 baa.graphics.getSmooth = function () {
 	return this._defaultSmooth;
 }
 
+/**
+ * Returns the color currently being used to draw geometry. 
+ * @return {array} The color currently in use.
+ */
 baa.graphics.getColor = function () {
 	return [this._color.r,this._color.g,this._color.b,this._color.a];
 }
 
+/**
+ * Returns the alpha the canvas uses for drawing.
+ * @return {number} The alpha currently in use.
+ */
 baa.graphics.getAlpha = function () {
 	return this._color.a;
 }
 
+/**
+ * Returns the background color
+ * @return {array} The background color
+ */
 baa.graphics.getBackgroundColor = function () {
 	return [this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b];
 }
 
+/**
+ * Returns the width of the line currently being used to draw geometry.
+ * @return {number} The width of the line
+ */
 baa.graphics.getLineWidth = function () {
 	return this.ctx.lineWidth;
 }
 
+/**
+ * Returns the current font being used to print text.
+ * @return {baa.graphics._font} The font currently in use.
+ */
 baa.graphics.getFont = function () {
 	return this.font;
 }
 
+/**
+ * Returns the current canvas being used to draw on.
+ * @return {baa.graphics._canvas} The current canvas in use.
+ */
 baa.graphics.getCanvas = function () {
 	return this.cvs;
 }
 
+/**
+ * Returns the width of the current canvas.
+ * @return {number} The width of the current canvas in use.
+ */
 baa.graphics.getWidth = function () {
 	return this.canvas.width;
 }
 
+/**
+ * Returns the height of the current canvas.
+ * @return {number} The height of the current canvas in use.
+ */
 baa.graphics.getHeight = function () {
 	return this.canvas.height;
 }
 
-baa.graphics.getTextWidth = function (t) {
-	return this.ctx.measureText(t).width;
+/**
+ * Returns the text width of a sample text.
+ * @param  {string} text The text you want to know the width from.
+ * @return {number}   The width of the text;
+ */
+baa.graphics.getTextWidth = function (text) {
+	return this.ctx.measureText(text).width;
 }
 
 
 //Coordinate System
 
+/**
+ * Removes all the translating, scaling, rotating  and shearing.
+ */
 baa.graphics.origin = function () {
 	this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
+/**
+ * Moves all drawing operations horizontal with x, and vertical with y. This also sets the origin for .rotate, .scale and .shear.
+ * @param  {number} x The horizontal movement
+ * @param  {number} y The vertical movement
+ */
 baa.graphics.translate = function (x,y) {
 	baa._checkType("x",x,"number");
 	baa._checkType("y",y,"number",null);
@@ -1346,11 +2239,20 @@ baa.graphics.translate = function (x,y) {
 	this.ctx.translate(x,y);
 }
 
+/**
+ * Rotates all the drawing operations. Note that this rotates the whole canvas (at the top left), and not each drawing operation on its own.
+ * @param  {number} r The rotation is radians
+ */
 baa.graphics.rotate = function (r) {
 	baa._checkType("r",r,"number");
 	this.ctx.rotate(r);
 }
 
+/**
+ * Scales all the drawing operations. Note that this scales the whole canvas (at the top left), and not each drawing operation on its own.
+ * @param  {number} x The horizontal scaling
+ * @param  {number} y The vertical scaling
+ */
 baa.graphics.scale = function (x,y) {
 	baa._checkType("x",x,"number");
 	baa._checkType("y",y,"number",null);
@@ -1358,6 +2260,11 @@ baa.graphics.scale = function (x,y) {
 	this.ctx.scale(x,y);
 }
 
+/**
+ * Scales all the drawing operations. Note that this shears the whole canvas (at the top left), and not each drawing operation on its own.
+ * @param  {number} x The horizontal shearing
+ * @param  {number} y The vertical shearing
+ */
 baa.graphics.shear = function (x,y) {
 	baa._checkType("x",x,"number");
 	baa._checkType("y",y,"number",null);
@@ -1365,15 +2272,27 @@ baa.graphics.shear = function (x,y) {
 	this.ctx.transform(1,y,x,1,0,0);
 }
 
+/**
+ * Pushes all the current translating, rotating, scaling and shearing on a stack.
+ */
 baa.graphics.push = function () {
 	this.ctx.save();
 }
 
+/**
+ * Pops the highest stack, removing all translating, rotating, scaling and shearing on that stack.
+ */
 baa.graphics.pop = function () {
 	this.ctx.restore();
 }
 
 //Utils
+
+/**
+ * This is called after every geometry function, to draw the shape filled, in lines or both.
+ * @param  {string} mode The fill mode. Options: "fill", "line", "both"
+ * @throws {Error} If an invalid mode is used.
+ */
 baa.graphics._mode = function (mode) {
 	baa._checkType("mode",mode,"string");
 
@@ -1390,24 +2309,23 @@ baa.graphics._mode = function (mode) {
 	else {
 		throw new Error("Invalid mode " + mode);
 	}
-	return false;
 }
 
-baa.graphics._clearScreen = function () {
-	this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-
-	if (baa.debug) { baa.debug.drawCalls++; };
-}
-
-baa.graphics._background = function () {
-	this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
-}
-
+/**
+ * Converts RGB to hex
+ * @param  {number} r Red
+ * @param  {number} g Green
+ * @param  {number} b Blue
+ * @return {string}   The color in hex
+ */
 baa.graphics._rgb = function (r,g,b) {
 	var x = ((r << 16) | (g << 8) | b).toString(16);
 	return "#000000".substring(0, 7 - x.length) + x;
 }
 
+/**
+ * Resets the font. This is called whenever a change to a font is made.
+ */
 baa.graphics._resetFont = function () {
 	this.ctx.font = this._currentFont.size + "pt " + this._currentFont.name;
 }
@@ -1415,10 +2333,28 @@ baa.graphics._resetFont = function () {
 
 //Audio
 
+/**
+ * The audio module takes care of everything you hear, and everything with sound. The audio, volume, pitch.
+ * @constructor
+ */
 baa.audio = {};
+
+/**
+ * All the audio files.
+ * @see  baa.audio.preload
+ */
 baa.audio._sources = {};
+
+/**
+ * The main volume. Whenever you start a source, the source's volume will be multiplied by the main volume.
+ */
 baa.audio._masterVolume = 1;
 
+/**
+ * Use this to preload audio. Assumes all audio are in the folder audio/
+ * @param {string} ext The extension of the audio. Examples: "ogg", "mp3", "wav"
+ * @param {string} ... Names of the audio. Example: "jump", "shoot", "hit" NOT: "audio/jump.ogg", "audio/shoot", "hit.wav"
+ */
 baa.audio.preload = function () {
 	var ext = "." + arguments[0];
 	for (var i = 1; i < arguments.length; i++) {
@@ -1431,63 +2367,105 @@ baa.audio.preload = function () {
 		snd.src = "audio/" + name + ext;
 		this._sources[name] = snd;
 		baa._assetsToBeLoaded++;
-		
 	}
 }
 
 //Recorder functions
 
+/**
+ * Plays the given audio
+ * @param  {baa.audio._source} source The audio to play
+ */
 baa.audio.play = function (source) {
 	baa._checkType("source",source,"baa.audio.source");
+
 	source.audio.play();
 	source.stopped = false;
 	source.playing = true;
 }
 
+/**
+ * Stops the given audio, and rewinds it.
+ * @param  {baa.audio._source} source The audio to stop
+ */
 baa.audio.stop = function (source) {
 	baa._checkType("source",source,"baa.audio.source");
+
 	source.audio.pause();
 	source.stopped = true;
 	source.playing = false;
 	source.audio.currentTime = 0;
 }
 
+/**
+ * Rewinds the given audio.
+ * @param  {baa.audio._source} source The audio to rewind
+ */
 baa.audio.rewind = function (source) {
 	baa._checkType("source",source,"baa.audio.source");
+
 	source.audio.currentTime = 0;
 }
 
+/**
+ * Pauses the given audio
+ * @param  {baa.audio._source} source The audio to pause
+ */
 baa.audio.pause = function (source) {
 	baa._checkType("source",source,"baa.audio.source");
+
 	source.audio.pause();
 	source.playing = false;
 }
 
+/**
+ * Resumes the given audio
+ * @param  {baa.audio._source} source The audio to resume
+ */
 baa.audio.resume = function (source) {
 	baa._checkType("source",source,"baa.audio.source");
+
 	if (source.audio.currentTime > 0) {
 		source.audio.play();
 		source.playing = true;
 	}
 }
 
+/**
+ * Sets the master volume. Whenever you start a source, the source's volume will be multiplied by the master volume.
+ * @param {number} volume What you want the master volume to set to
+ */
 baa.audio.setVolume = function (volume) {
 	baa._checkType("volume",volume,"number");
+
 	this.masterVolume = volume;
 }
 
 
 //New functions
 
+/**
+ * An audio object. Makes it able to read data of the audio, and set the volume for specific audio.
+ * @constructor
+ * @throws {Error} If url is a non-existing source.
+ * @param {string} url The url of the source
+ * @param {boolean} stopped If the audio is stopped.
+ * @param {boolean} playing If the audio is playing.
+ */
 baa.audio._source = Class.extend("baa.audio.source");
 
 baa.audio._source.init = function (url) {
 	baa._checkType("url",url,"string");
+
+	if (baa.graphics._sources[url]==null) { throw ("Audio '" + url + "' doesn't exist. Did you forgot to preload it?")}
 	this.audio = baa.audio.sources[url];
 	this.stopped = false;
 	this.playing = false;
 }
 
+/**
+ * Plays the audio.
+ */
 baa.audio._source.play = function () {
 	var oVol = this.audio.volume;
 	this.audio.volume *= baa.audio.masterVolume;
@@ -1497,17 +2475,26 @@ baa.audio._source.play = function () {
 	this.audio.volume = oVol;
 }
 
+/**
+ * Stops the audio.
+ */
 baa.audio._source.stop = function () {
 	this.audio.pause();
 	this.stopped = true;
 	this.audio.currentTime = 0;
 }
 
+/**
+ * Pauses the audio.
+ */
 baa.audio._source.pause = function () {
 	this.audio.pause();
 	this.playing = false;
 }
 
+/**
+ * Resumes the audio.
+ */
 baa.audio._source.resume = function () {
 	if (this.audio.currentTime>0) {
 		this.audio.play();
@@ -1515,58 +2502,114 @@ baa.audio._source.resume = function () {
 	}
 }
 
+/**
+ * Rewinds the audio
+ */
 baa.audio._source.rewind = function () {
 	this.audio.currentTime = 0;
 }
 
+/**
+ * Returns the volume of the audio.
+ * @return {number} The volume of the audio
+ */
 baa.audio._source.getVolume = function () {
 	return this.audio.volume;
 }
 
+/**
+ * Sets the volume of the audio. 0 is no sound, 1 is full sound.
+ * @param {number} volume What the volume to set to
+ */
 baa.audio._source.setVolume = function (volume) {
 	baa._checkType("volume",volume,"number");
+
 	this.audio.volume = volume;
 }
 
+/**
+ * Returns if the audio is looping.
+ * @return {boolean} If the audio is looping.
+ */
 baa.audio._source.isLooping = function () {
 	return this.audio.loop;
 }
 
+/**
+ * Sets if the audio should loop
+ * @param {boolean} loop If the audio should loop
+ */
 baa.audio._source.setLooping = function (loop) {
 	baa._checkType("loop",loop,"boolean");
+
 	this.audio.loop = loop;
 }
 
+/**
+ * Returns if the audio is currently playing 
+ * @return {boolean} If the audio is currently playing
+ */
 baa.audio._source.isPlaying = function () {
 	return this.playing;
 }
 
+/**
+ * Returns if the audio is currently paused. 
+ * @return {boolean} If the audio is currently paused.
+ */
 baa.audio._source.isPaused = function () {
 	return this.audio.paused;
 }
 
+/**
+ * Returns if the audio is currently stopped. 
+ * @return {boolean} If the audio is currently stopped.
+ */
 baa.audio._source.isStopped = function () {
 	return this.stopped;
 }
 
+/**
+ * Sets the pitch of the audio. The higher the pitch, the faster the audio goes.
+ * @param {number} pitch What the pitch to set to.
+ */
 baa.audio._source.setPitch = function (pitch) {
 	baa._checkType("pitch",pitch,"number");
+
 	this.audio.playbackRate = pitch;
 }
 
+/**
+ * Returns the current pitch of the audio.
+ * @return {number} The current pitch of the audio.
+ */
 baa.audio._source.getPtich = function () {
 	return this.audio.playbackRate;
 }
 
+/**
+ * Sets the current audio at a specific time, skipping part of the song, or rewinding a part back.
+ * @param  {number} position The position to set to.
+ */
 baa.audio._source.seek = function (position) {
 	baa._checkType("position",position,"number");
+
 	this.audio.currentTime = position;
 }
 
+/**
+ * Returns the time the audio currently is at.
+ * @return {number} The time the audio currently is at.
+ */
 baa.audio._source.tell = function () {
 	return this.audio.currentTime;
 }
 
+/**
+ * Creates a new source. This is used to keep source a private object.
+ * @see  baa.audio._source
+ * @return {baa.audio._source} The new source
+ */
 baa.audio.newSource = function (url) {
 	return this._source.new(url);
 }
@@ -1574,11 +2617,30 @@ baa.audio.newSource = function (url) {
 
 //Keyboard
 
+/**
+ * Keyboard takes care for all they key events. All keys are converted to strings.
+ * @constructor
+ */
 baa.keyboard = {};
-baa.keyboard._keysDown = {};
+
+/**
+ * All the keys as objects. Every object has a key corresponding to it's... key.
+ */
+baa.keyboard._keys = {};
+
+/**
+ * An array of keys that are currently pressed.
+ */
 baa.keyboard._pressed = [];
+
+/**
+ * An array of all the keys that are currently released.
+ */
 baa.keyboard._released = [];
 
+/**
+ * The keys converted to strings. Most keycodes can be converted to strings with String.fromCharCode().lowerCase. These are exceptions.
+ */
 baa.keyboard._constant = {
 	8: "backspace",
 	9: "tab",
@@ -1644,10 +2706,14 @@ baa.keyboard._constant = {
 	222: "'"
 };
 
+/**
+ * This is called every time a key is pressed
+ * @param  {object} event The Event object. 
+ */
 baa.keyboard._downHandler = function(event) {
 	event.preventDefault();
 	var keyPressed = baa.keyboard._constant[event.keyCode] || String.fromCharCode(event.keyCode).toLowerCase();
-	if (!baa.keyboard._keysDown[keyPressed]) {
+	if (!baa.keyboard._keys[keyPressed]) {
 		baa.keyboard._pressed.push(keyPressed);
 		if (baa.keyPressed) {
 			baa.keyPressed(keyPressed);
@@ -1656,32 +2722,45 @@ baa.keyboard._downHandler = function(event) {
 			baa.debug.keypressed(keyPressed,event.keyCode);
 		}
 	}
-	baa.keyboard._keysDown[keyPressed] = true;
+	baa.keyboard._keys[keyPressed] = true;
 }
 
+/**
+ * This is called every time a key is released.
+ * @param  {object} event The Event object. 
+ */
 baa.keyboard._upHandler = function(event) {
 	var keyReleased = baa.keyboard._constant[event.keyCode] || String.fromCharCode(event.keyCode).toLowerCase();
 	baa.keyboard._released.push(keyReleased);
 	if (baa.keyReleased) {
 		baa.keyReleased(keyReleased);
 	}
-	baa.keyboard._keysDown[keyReleased] = false;
+	baa.keyboard._keys[keyReleased] = false;
 }
 
-
+/**
+ * Returns if any of the given keys is currently down. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The keys you want to check. If the first arugment is an array, 
+ * it will check the strings in the array, and disregard all other arguments.
+ */
 baa.keyboard.isDown = function() {
 	if (typeof(arguments[0]) == "object") {
 		arguments = arguments[0];
 	}
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("key",arguments[i],"string");
-		if (baa.keyboard._keysDown[arguments[i]]) {
+		if (baa.keyboard._keys[arguments[i]]) {
 			return true;
 		}
 	}
 	return false;
 }
 
+/**
+ * Returns if any of the given keys has just been pressed. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The keys you want to check. If the first arugment is an array, 
+ * it will check the strings in the array, and disregard all other arguments.
+ */
 baa.keyboard.isPressed = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("key",arguments[i],"string");
@@ -1694,6 +2773,11 @@ baa.keyboard.isPressed = function () {
 	return false;
 }
 
+/**
+ * Returns if any of the given keys has just been released. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The keys you want to check. If the first arugment is an array, 
+ * it will check the strings in the array, and disregard all other arguments.
+ */
 baa.keyboard.isReleased = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("key",arguments[i],"string");
@@ -1708,10 +2792,29 @@ baa.keyboard.isReleased = function () {
 
 //Mouse
 
+/**
+ * Mouse takes care for the buttons, and for the cursor position. baa.mouse is of the type baa.point, allowing you to check overlap with rectangles.
+ */
 baa.mouse = baa.point.new();
-baa.mouse._buttonsDown = [];
+
+/**
+ * The buttons of the mouse. Each button is it's own object so that it can be set true or false, when it's down or not.
+ */
+baa.mouse._buttons = [];
+
+/**
+ * An array of all the buttons that are pressed.
+ */
 baa.mouse._pressed = [];
+
+/**
+ * An array of all the buttons that are released.
+ */
 baa.mouse._released = [];
+
+/**
+ * The names of all the keys with their corresponding keycode.
+ */
 baa.mouse._constant = {
 	0:"l",
 	1:"m",
@@ -1720,14 +2823,22 @@ baa.mouse._constant = {
 	5:"wd"
 };
 
+/**
+ * This is called everything the mouse is moved.
+ * @param  {object} event The Event object.
+ */
 baa.mouse._move = function (event) {
 	baa.mouse.x = event.clientX-4;
 	baa.mouse.y = event.clientY-9;
 }
 
+/**
+ * This is called everything a mouse button is clicked.
+ * @param  {object} event The Event object.
+ */
 baa.mouse._downHandler = function (event) {
 	var mousepressed = baa.mouse._constant[event.button];
-	if (!baa.mouse._buttonsDown[mousepressed]) {
+	if (!baa.mouse._buttons[mousepressed]) {
 		baa.mouse._pressed.push(mousepressed);
 		if (baa.mousepressed) {
 			baa.mousepressed(mousepressed,event.clientX,event.clientY);
@@ -1736,23 +2847,31 @@ baa.mouse._downHandler = function (event) {
 			baa.debug.mousepressed(mousepressed,event.clientX,event.clientY)
 		}
 	}
-	baa.mouse._buttonsDown[mousepressed] = true;
+	baa.mouse._buttons[mousepressed] = true;
 }
 
+/**
+ * This is called everything a mouse button is released.
+ * @param  {object} event The Event object.
+ */
 baa.mouse._upHandler = function (event) {
 	var mousereleased = baa.mouse._constant[event.button];
-	if (baa.mouse._buttonsDown[mousereleased]) {
+	if (baa.mouse._buttons[mousereleased]) {
 		baa.mouse._released.push(mousereleased);
 		if (baa.mousereleased) {
 			baa.mousereleased(mousereleased,event.clientX,event.clientY);
 		}
 	}
-	baa.mouse._buttonsDown[mousereleased] = false;
+	baa.mouse._buttons[mousereleased] = false;
 }
 
+/**
+ * This is called everything the mousewheel is scrolled.
+ * @param  {object} event The Event object.
+ */
 baa.mouse._wheelHandler = function (event) {
 	var mousepressed = baa.mouse._constant[event.wheelDelta > 0 ? 4 : 5];
-	if (!baa.mouse._buttonsDown[mousepressed]) {
+	if (!baa.mouse._buttons[mousepressed]) {
 		baa.mouse._pressed.push(mousepressed);
 		if (baa.mousepressed) {
 			baa.mousepressed(mousepressed,event.clientX,event.clientY);
@@ -1763,24 +2882,42 @@ baa.mouse._wheelHandler = function (event) {
 	}
 }
 
+/**
+ * Returns the horizontal position of the mouse.
+ * @return {number} The horizontal position of the mouse.
+ */
 baa.mouse.getX = function () {
 	return this.x;
 }
 
+/**
+ * Returns the vertical position of the mouse.
+ * @return {number} The vertical position of the mouse.
+ */
 baa.mouse.getY = function () {
 	return this.y;
 }
 
+/**
+ * Returns if any of the given buttons is currently down. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The buttons you want to check. If the first arugment is an array, 
+ * it will check the strings in the array, and disregard all other arguments.
+ */
 baa.mouse.isDown = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("button",arguments[i],"string");
-		if (baa.mouse._buttonsDown[arguments[i]]) {
+		if (baa.mouse._buttons[arguments[i]]) {
 			return true;
 		}
 	}
 	return false;
 }
 
+/**
+ * Returns if any of the given buttons has just been pressed. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The buttons you want to check. If the first arugment is an array, 
+ * it will check the strings in the array, and disregard all other arguments.
+ */
 baa.mouse.isPressed = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("button",arguments[i],"string");
@@ -1793,6 +2930,10 @@ baa.mouse.isPressed = function () {
 	return false;
 }
 
+/**
+ * Returns if any of the given buttons has just been pressed. You can give infinite arguments, or give an array as the first argument.
+ * @return {string|array} ... The buttons you want to check. If this is an array, it will check the strings in the array, and disregard all other arguments.
+ */
 baa.mouse.isReleased = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		baa._checkType("button",arguments[i],"string");
@@ -1805,6 +2946,10 @@ baa.mouse.isReleased = function () {
 	return false;
 }
 
+/**
+ * Removes the given button from the list of pressed buttons. Useful for when you want to click on something, and not have something behind that affected by it.
+ * @param  {string} button The button you want to remove
+ */
 baa.mouse.catchPressed = function (button) {
 	baa._checkType("button",button,"string");
 	for (var i = 0; i < this._pressed.length; i++) {
@@ -1815,6 +2960,10 @@ baa.mouse.catchPressed = function (button) {
 	}
 }
 
+/**
+ * Removes the given button from the list of released buttons. Useful for when you want to click on something, and not have something behind that affected by it.
+ * @param  {string} button The button you want to remove
+ */
 baa.mouse.catchReleased = function (button) {
 	baa._checkType("button",button,"string");
 	for (var i = 0; i < this._released.length; i++) {
@@ -1825,6 +2974,10 @@ baa.mouse.catchReleased = function (button) {
 	}
 }
 
+/**
+ * Sets the look of the cursor. Options: TODO: ADD OPTIONS!
+ * @param {string} cursor What you want the cursor to set to.
+ */
 baa.mouse.setCursor = function (cursor) {
 	baa._checkType("button",cursor,"string");
 	document.getElementById("canvas").style.cursor=cursor;
@@ -1833,42 +2986,92 @@ baa.mouse.setCursor = function (cursor) {
 
 //Filesystem
 
+/**
+ * The filesystem takes care foar loading and saving data to the local storage.
+ */
 baa.filesystem = {};
 
 //Filesystem uses store.js
 /* Copyright (c) 2010-2013 Marcus Westin */
-(function(e){function o(){try{return r in e&&e[r]}catch(t){return!1}}var t={},n=e.document,r="localStorage",i="script",s;t.disabled=!1,t.set=function(e,t){},t.get=function(e){},t.remove=function(e){},t.clear=function(){},t.transact=function(e,n,r){var i=t.get(e);r==null&&(r=n,n=null),typeof i=="undefined"&&(i=n||{}),r(i),t.set(e,i)},t.getAll=function(){},t.forEach=function(){},t.serialize=function(e){return JSON.stringify(e)},t.deserialize=function(e){if(typeof e!="string")return undefined;try{return JSON.parse(e)}catch(t){return e||undefined}};if(o())s=e[r],t.set=function(e,n){return n===undefined?t.remove(e):(s.setItem(e,t.serialize(n)),n)},t.get=function(e){return t.deserialize(s.getItem(e))},t.remove=function(e){s.removeItem(e)},t.clear=function(){s.clear()},t.getAll=function(){var e={};return t.forEach(function(t,n){e[t]=n}),e},t.forEach=function(e){for(var n=0;n<s.length;n++){var r=s.key(n);e(r,t.get(r))}};else if(n.documentElement.addBehavior){var u,a;try{a=new ActiveXObject("htmlfile"),a.open(),a.write("<"+i+">document.w=window</"+i+'><iframe src="/favicon.ico"></iframe>'),a.close(),u=a.w.frames[0].document,s=u.createElement("div")}catch(f){s=n.createElement("div"),u=n.body}function l(e){return function(){var n=Array.prototype.slice.call(arguments,0);n.unshift(s),u.appendChild(s),s.addBehavior("#default#userData"),s.load(r);var i=e.apply(t,n);return u.removeChild(s),i}}var c=new RegExp("[!\"#$%&'()*+,/\\\\:;<=>?@[\\]^`{|}~]","g");function h(e){return e.replace(/^d/,"___$&").replace(c,"___")}t.set=l(function(e,n,i){return n=h(n),i===undefined?t.remove(n):(e.setAttribute(n,t.serialize(i)),e.save(r),i)}),t.get=l(function(e,n){return n=h(n),t.deserialize(e.getAttribute(n))}),t.remove=l(function(e,t){t=h(t),e.removeAttribute(t),e.save(r)}),t.clear=l(function(e){var t=e.XMLDocument.documentElement.attributes;e.load(r);for(var n=0,i;i=t[n];n++)e.removeAttribute(i.name);e.save(r)}),t.getAll=function(e){var n={};return t.forEach(function(e,t){n[e]=t}),n},t.forEach=l(function(e,n){var r=e.XMLDocument.documentElement.attributes;for(var i=0,s;s=r[i];++i)n(s.name,t.deserialize(e.getAttribute(s.name)))})}try{var p="__storejs__";t.set(p,p),t.get(p)!=p&&(t.disabled=!0),t.remove(p)}catch(f){t.disabled=!0}t.enabled=!t.disabled,typeof module!="undefined"&&module.exports&&this.module!==module?module.exports=t:typeof define=="function"&&define.amd?define(t):e.store=t})(Function("return this")());
+(function(e){function o(){try{return r in e&&e[r]}catch(t){return!1}}var t={},n=e.document,r="localStorage",i="script",s;t.disabled=!1,
+t.set=function(e,t){},t.get=function(e){},t.remove=function(e){},t.clear=function(){},t.transact=function(e,n,r){var i=t.get(e);r==null&&(r=n,n=null),
+typeof i=="undefined"&&(i=n||{}),r(i),t.set(e,i)},t.getAll=function(){},t.forEach=function(){},t.serialize=function(e){return JSON.stringify(e)},
+t.deserialize=function(e){if(typeof e!="string")return undefined;try{return JSON.parse(e)}catch(t){return e||undefined}};if(o())s=e[r],t.set=function(e,n)
+{return n===undefined?t.remove(e):(s.setItem(e,t.serialize(n)),n)},t.get=function(e){return t.deserialize(s.getItem(e))},t.remove=function(e){s.removeItem(e)},
+t.clear=function(){s.clear()},t.getAll=function(){var e={};return t.forEach(function(t,n){e[t]=n}),e},t.forEach=function(e){for(var n=0;n<s.length;n++)
+{var r=s.key(n);e(r,t.get(r))}};else if(n.documentElement.addBehavior){var u,a;try{a=new ActiveXObject("htmlfile"),a.open(),
+a.write("<"+i+">document.w=window</"+i+'><iframe src="/favicon.ico"></iframe>'),a.close(),u=a.w.frames[0].document,s=u.createElement("div")}catch(f)
+{s=n.createElement("div"),u=n.body}function l(e){return function(){var n=Array.prototype.slice.call(arguments,0);n.unshift(s),u.appendChild(s),
+s.addBehavior("#default#userData"),s.load(r);var i=e.apply(t,n);return u.removeChild(s),i}}var c=new RegExp("[!\"#$%&'()*+,/\\\\:;<=>?@[\\]^`{|}~]","g");
+function h(e){return e.replace(/^d/,"___$&").replace(c,"___")}t.set=l(function(e,n,i){return n=h(n),i===undefined?t.remove(n):(e.setAttribute(n,t.serialize(i)),
+e.save(r),i)}),t.get=l(function(e,n){return n=h(n),t.deserialize(e.getAttribute(n))}),t.remove=l(function(e,t){t=h(t),e.removeAttribute(t),e.save(r)}),
+t.clear=l(function(e){var t=e.XMLDocument.documentElement.attributes;e.load(r);for(var n=0,i;i=t[n];n++)e.removeAttribute(i.name);e.save(r)}),
+t.getAll=function(e){var n={};return t.forEach(function(e,t){n[e]=t}),n},t.forEach=l(function(e,n){var r=e.XMLDocument.documentElement.attributes;
+for(var i=0,s;s=r[i];++i)n(s.name,t.deserialize(e.getAttribute(s.name)))})}try{var p="__storejs__";t.set(p,p),t.get(p)!=p&&(t.disabled=!0),
+t.remove(p)}catch(f){t.disabled=!0}t.enabled=!t.disabled,typeof module!="undefined"&&module.exports&&
+this.module!==module?module.exports=t:typeof define=="function"&&define.amd?define(t):e.store=t})(Function("return this")());
 
+/**
+ * Reads the data of what is stored in the given file.
+ * @param  {string} name The name of the file you want to read.
+ * @return {dynamic TODO: OR STRING!?}      The data of the file
+ */
 baa.filesystem.read = function (name) {
 	baa._checkType("file",name,"string");
 	this._check();
+
 	return store.get(this.identity+name);
 }
 
+/**
+ * Writes data to the given file.
+ * @param  {string} name   	The name of the file you want to write to.
+ * @param  {dynamic TODO: OR STRING?!} content The data you want to write to the file.
+ */
 baa.filesystem.write = function (name,content) {
 	baa._checkType("file",name,"string");
 	this._check();
-	return store.set(this.identity+name,content);
+
+	store.set(this.identity+name,content);
 }
 
+/**
+ * Removes the given file of the local storage.
+ * @param  {string} name The name of the file you want to remove
+ */
 baa.filesystem.remove = function (name) {
 	baa._checkType("file",name,"string");
 	this._check();
-	return store.remove(this.identity+name);
+
+	store.remove(this.identity+name);
 }
 
+/**
+ * Returns if given file exists.
+ * @param  {string} name The name of the file you want to check.
+ * @return {boolean}      If the file exists.
+ */
 baa.filesystem.exists = function (name) {
 	baa._checkType("file",name,"string");
 	this._check();
+
 	return store.get(this.identity+name) != null;
 }
 
+/**
+ * Sets an identity to the filesystem. This is required before using any of the filesystem features. The identity can also be set with t.identity = "" in baa.config.
+ * @param {string} name The name of what the identity to set to
+ */
 baa.filesystem.setIdentity = function (name) {
 	baa._checkType("file",name,"string");
-	if (typeof(name) != "string") { throw("Please provide a string as identity"); }
+
 	this.identity = name+"/";
 }
 
+/**
+ * Checks if local storage is enabled, and if an identity is set.
+ * @throws {Error} If no enditity is set.
+ */
 baa.filesystem._check = function () {
 	if (!store.enabled) { alert('Local storage is not supported by your browser. Please disable "Private Mode", or upgrade to a modern browser.')};
 	if (this.identity == null) { throw("Please set an identity before using filesystem!");}
@@ -1877,6 +3080,9 @@ baa.filesystem._check = function () {
 
 //Run
 
+/**
+ * Call this to start baa. This should be called as last.
+ */
 baa.run = function () {
 		window.requestAnimFrame = (function(){
 		return  window.requestAnimationFrame   ||  //Chromium 
@@ -1909,9 +3115,7 @@ baa.run = function () {
 			baa.graphics.imageSmoothingEnabled = true;
 			baa.graphics.ctx.strokeStyle = baa.graphics._rgb(255,255,255);
 			baa.graphics.setFont(baa.graphics.newFont("arial",10));
-			
 			baa.load();
-			baa.graphics._background();
 			baa.loop(0);
 			window.cancelAnimFrame(baa.run);
 		}
@@ -1924,13 +3128,16 @@ baa.run = function () {
 	}
 }
 
+/**
+ * The main loop. Calls baa.update, and baa.graphics.drawLoop. It also calls baa.debug.update if baa.debug is activated.
+ */
 baa.loop = function (time) {
-	baa.time.dt = (time - baa.time.last) / 1000;
-	ot = (baa.time.dt > 0) ? baa.time.dt : 1/60;
+	baa._time.dt = (baa._time.stamp() - baa._time.last) / 1000;
+	ot = (baa._time.dt > 0) ? baa._time.dt : 1/60;
 	dt = Math.min(ot,1/60);
 
 	if (baa.debug) {
-		baa.debug.fps = 1000 / (time - baa.time.last);
+		baa.debug.fps = 1000 / (baa._time.stamp() - baa._time.last);
 		baa.debug.update();
 	}
 
@@ -1945,24 +3152,26 @@ baa.loop = function (time) {
 		baa.debug.updateWindows();
 	}
 
-
-	baa.graphics.drawloop();
+	baa.graphics._drawloop();
 
 	baa.keyboard._pressed = [];
 	baa.keyboard._released = [];
 	baa.mouse._pressed = [];
 	baa.mouse._released = [];
 
-	baa.time.last = time;
+	baa._time.last = baa._time.stamp();
 	window.requestAnimFrame(baa.loop);
 }
 
-baa.graphics.drawloop = function (a) {
+/**
+ * The draw loop. Calls baa.draw, and baa.debug.draw if baa.debug is activated.
+ */
+baa.graphics._drawloop = function (a) {
 	if (baa.draw) {
 		// this._clearScreen();
 		this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b);
 		this.ctx.globalAlpha = 1;
-		this._background();
+		this.clear();
 		this.ctx.globalAlpha = this._color.a;
 		this.ctx.fillStyle = this._rgb(this._color.r,this._color.g,this._color.b);
 		this.ctx.strokeStyle = this._rgb(this._color.r,this._color.g,this._color.b);
@@ -1985,6 +3194,27 @@ window.addEventListener('load', _baa_init);
 ///ONCE///
 //////////
 
+/**
+ * A small tool to lock functions to 1 call. They won't be called again until they are unlocked.
+ * @constructor
+ * @property {object} object The object of this instance.
+ * @property {object} list A list of all the functions, and their current state.
+ * @param {object} obj The object of this instance.
+ * @example
+ * this.once = baa.once.new(this);
+ *
+ * Foo.update = function () {
+ * 		//This is only called once
+ * 		this.once.do("foo");
+ *
+ * 		//If a is pressed
+ * 		if (baa.keyboard.isPressed("a")) {
+ *
+ * 			//this.foo can be called again, this.bar is called.
+ * 			this.once.back("foo","bar");
+ * 		}
+ * }
+ */
 baa.once = Class.extend("baa.once");
 
 baa.once.init = function (obj) {
@@ -1994,6 +3224,12 @@ baa.once.init = function (obj) {
 	this.list = {};
 }
 
+/**
+ * Call a function. If it has already been called with this function, it won't be called again.
+ * @param  {string} f    The function to call.
+ * @param  {array} args An array of arguments to use with the function.
+ * @return {dynamic} If the function is called, returns whatever the given function returns. Else, returns null.
+ */
 baa.once.do = function (f,args) {
 	baa._checkType("function",f,"string");
 	baa._checkType("arguments",args,"object");
@@ -2005,13 +3241,21 @@ baa.once.do = function (f,args) {
 	return;
 }
 
+/**
+ * Allow a function to be called again. You can give a new function that will be called.
+ *  The new function will not be locked, but won't be called by this function if f is already reverted.
+ * @param  {string} f    The function you want to unlock.
+ * @param  {string} [nf]   The function you want call when f is unlocked.
+ * @param  {array} [args] An array of arguments to use with the function.
+ * @return {dynamic} If nf is called, returns whatever nf returns. Else, returns null.
+ */
 baa.once.back = function (f,nf,args) {
 	baa._checkType("function",f,"string");
 	baa._checkType("newFunction",nf,"string");
 	baa._checkType("arguments",args,"object");
 
 	if (this.list[f]) {
-		this.list[f] = null;
+		delete(list[f]);
 		if (nf) {
 			return this.object[nf].apply(this.object,args);
 		}
@@ -2022,25 +3266,26 @@ baa.once.back = function (f,nf,args) {
 	return;
 }
 
-
-////////////
-// Class //
-////////////
-
-// baa.class = Class.extend("baa.class");
-
-// baa.class.init = function () {
-// 	this.once = baa.Once.new();
-// }
-
 ///////////
 // Utils //
 ///////////
 
+/**
+ * Useful small functions.
+ * @constructor
+ */
 baa.util = {};
 
+/**
+ * Math.PI multiplied.
+ */
 baa.util.TAU = Math.PI*2;
 
+/**
+ * Returns 1 if a is higher or equal to 0, else it returns -1.
+ * @param  {number} a The value you want to sign.
+ * @return {number}   1 if a is higher or equal to 0, else it returns -1.
+ */
 baa.util.sign = function (a) {
 	baa._checkType("a",a,"number");
 
@@ -2151,16 +3396,13 @@ baa.util.findAll = function (arr,f) {
 	return newarr;
 }
 
-baa.util.has = function () {
-	var arr = arguments[0];
-	baa._checkType("array",arr,"object");
-	f = Array.prototype.slice.call(arguments);
-	f.splice(0,1);
-	for (var i = 0; i < f.length; i++) {
-		baa._checkType("key",f[i],"string");
+baa.util.has = function (arr) {
+	baa._checkType("array",arr,"array");
+	for (var i = 1; i < arguments.length; i++) {
+		baa._checkType("key",arguments[i],"string");
 		succes = false;
 		for (var j = 0; j < arr.length; j++) {
-			if (arr[j] == f[i]) {
+			if (arr[j] == arguments[i]) {
 				succes = true;
 			}
 		}
@@ -2172,7 +3414,7 @@ baa.util.has = function () {
 }
 
 baa.util.count = function (arr,f) {
-	baa._checkType("array",arr,"object");
+	baa._checkType("array",arr,"array");
 	baa._checkType("function",f,"string","function");
 	
 	var c = 0;
@@ -2197,7 +3439,6 @@ baa.util.count = function (arr,f) {
 	return c;
 }
 
-
 baa.util.clamp = function (a,min,max) {
 	baa._checkType("a",a,"number");
 	baa._checkType("min",min,"number");
@@ -2218,6 +3459,23 @@ baa.util.getAngle = function (a,b,c,d) {
 	else {
 		return Math.atan2(d - b, c - a);
 	}
+}
+
+baa.util.getDistance = function (a,b,c,d) {
+	if (typeof(a) === "object") {
+		baa._checkType("x1",a,"object");
+		baa._checkType("y1",b,"object");
+		c = b.x;
+		d = b.y;
+		b = a.y;
+		a = a.x;
+	}
+	else {
+		baa._checkType("x2",c,"number");
+		baa._checkType("y2",d,"number");
+	}
+
+	return Math.sqrt(Math.pow(a-c,2) + Math.pow(b-d,2));
 }
 
 baa.util.random = function (s,e) {
@@ -2259,16 +3517,57 @@ baa.util.remove = function (arr,f) {
 	return arr;
 }
 
+baa.util.call = function (obj,func) {
+	if (typeof(func) == "string") {
+		obj[func].call(obj);
+	}
+	else {
+		func.call(obj);
+	}
+}
+
+
+
 ///////////
 // Group //
 ///////////
 
+/**
+ * A tool to make groups, saves you from writing arrays.
+ * @constructor
+ * @example
+ * this.enemies = baa.group.new();
+ * this.enemies.add( Enemy.new(), Enemy.new(), Enemy.new() );
+ *
+ * this.enemies.update();
+ *
+ * this.enemies.draw();
+ * @property {number} length How many members are in the group.
+ * @param {object|array} [...] The objects you want to add to the group. Can also be added with baa.group.add(). 
+ * If the first argument is an array, it will use the objects in the array, and disregard all other arguments.
+ */
 baa.group = Class.extend("baa.group");
 
 //Use .other if you want obj A to apply to obj B and vise versa
 //Use .one if you want obj B to apply to obj A only if obj A applied to obj B returns false
-baa.group.other = "__GroupOthers";
+
+/**
+ * Using this as first argument when calling a function, will loop through all objects, and gives every other object as argument.
+ * @example
+ * this.rects = baa.group.new(baa.entity.new(100,100,200,200),baa.entity.new(50,50,100,100),baa.entity.new(300,200,10,40));
+ * this.rects.resolveCollision(baa.group.others);
+ */
+baa.group.others = "__GroupOthers";
+
+/**
+ * Same as baa.group.others, except this will first call A with B as argument, and if A returns true, it will not call B with A as argument.
+ */
 baa.group.one = "__GroupOne";
+
+/**
+ * Make baa.group loop forwards through the objects. Normally the objects loop backwards, but you can revert that with this argument. 
+ * Useful for when you want to update something you want to draw as last, so that it's on top.
+ */
 baa.group.forward = "_GroupForward";
 
 baa.group.init = function () {
@@ -2276,13 +3575,17 @@ baa.group.init = function () {
 	baa.group.add.apply(this,arguments);
 }
 
+/**
+ * Add objects to the group. It will copy and modify it's functions so that it can be called by this. 
+ *	@param {object|array} ... The objects you want to add to the group. If the first argument is an array, it will use the objects in the array, 
+ *	and disregard all other arguments.
+ */
 baa.group.add = function (obj) {
 	if (obj) {
 		if (arguments.length > 1) {
 			for (var i = 0; i < arguments.length; i++) {
 				this[this.length] = arguments[i];
 				this.length++;
-				// print(arguments[i].type());
 				for (var key in arguments[i]) {
 					if (!this.hasOwnProperty(key)) {
 						if (typeof(arguments[i][key]) == "function") {
@@ -2319,6 +3622,10 @@ baa.group.add = function (obj) {
 	}
 }
 
+/**
+ * Removes an object from the group.
+ * @param  {obj|number} obj Can be the object itself, or its current position in the group.
+ */
 baa.group.remove = function (obj) {
 	baa._checkType("object",obj,"number","object");
 
@@ -2344,10 +3651,14 @@ baa.group.remove = function (obj) {
 	this[this.length] = null;
 }
 
+/**
+ * Modifies the function so that it calls the function for all the members.
+ * @param  {string} k The function name
+ */
 baa.group._makeFunc = function (k) {
 	this[k] = function () {
 		var other = arguments[0]
-		if (other == baa.group.other || other == baa.group.one) {
+		if (other == baa.group.others || other == baa.group.one) {
 			for (var i=0; i < this.length-1; i++) {
 				for (var j=i; j < this.length; j++) {
 					if (i!=j) {
@@ -2384,14 +3695,23 @@ baa.group._makeFunc = function (k) {
 	}
 }
 
+/**
+ * Make all the objects in the group call a function.
+ * @param  {function} f The function you want to call.
+ */
 baa.group.do = function (f) {
 	baa._checkType("function",f,"function");
 
 	for (var i=0; i < this.length; i++) {
-		f(this[i]);
+		func.call(this[i]);
 	}
 }
 
+/**
+ * Sets a value to the given variable for all members. The object is required to already have this property.
+ * @param {string} key   The property you want to change.
+ * @param {dynamic} value The value you want to give the property.
+ */
 baa.group.set = function (key,value) {
 	baa._checkType("key",key,"string");
 
@@ -2402,55 +3722,21 @@ baa.group.set = function (key,value) {
 	}
 }
 
-baa.group.count = function (f) {
-	baa._checkType("condition",f,"function","object");
-
-	var c = 0;
-	if (typeof(f)=="function") {
-		for (var i=0; i < this.length; i++) {
-			if (f(this[i])) {
-				c++;
-			}
-		}
-	}
-	else {
-		for (var i=0; i < this.length; i++) {
-			for (var key in f) {
-				if (this[i][key]!=undefined) {
-					if (this[i][key] == f[key]) {
-						return c++;
-					}
-				}
-			}
-		}
-	}
-	return c;
-}
-
-baa.group.find = function (f) {
-	baa._checkType("condition",f,"function","object");
-
-	if (typeof(f)=="function") {
-		for (var i=0; i < this.length; i++) {
-			if (f(this[i])) {
-				return i;
-			}
-		}
-	}
-	else {
-		for (var i=0; i < this.length; i++) {
-			for (var key in f) {
-				if (this[i][key]!=undefined) {
-					if (this[i][key] == f[key]) {
-						return i;
-					}
-				}
-			}
-		}
-	}
-	return null;
-}
-
+/**
+ * Prepares the group for objects to come. Allowing you to already call its functions, without any members.
+ * @example
+ * this.group = baa.group.new();
+ *
+ * //This will give an error. this.group doesn't have .update().
+ * this.group.update()
+ *
+ * this.group = baa.group.new();
+ * this.group.prepare(baa.entity);
+ *
+ * //The group is prepared and can now already call functions without errors.
+ * this.group.update();
+ * @param  {object} obj An object with the functions the group is going to use.
+ */
 baa.group.prepare = function (obj) {
 	for (var key in obj) {
 		if (!this.hasOwnProperty(key)) {
@@ -2461,6 +3747,9 @@ baa.group.prepare = function (obj) {
 	}
 }
 
+/**
+ * Removes all the members of the group, but keeps the functions.
+ */
 baa.group.flush = function () {
 	for (var i=0; i < this.length; i++) {
 		delete(this[i]); 
@@ -2468,21 +3757,29 @@ baa.group.flush = function () {
 	this.length = 0;
 }
 
-baa.group.sort = function (a,lowToHigh) {
+/**
+ * Sorts all the members on the value of a property. If an object in the group does not own the property, it will be taken as 0.
+ * @param  {string} key         The property you want to sort on.
+ * @param  {boolean} [highToLow] Set to true if you want the object to sort from high to low, instead of low to high.
+ */
+baa.group.sort = function (a,highToLow) {
 	baa._checkType("key",a,"string");
-	baa._checkType("lowToHigh",lowToHigh,"boolean");
+	baa._checkType("highToLow",highToLow,"boolean");
 
 	sorted = false;
 
 	var danger = 10000;
+	var propA, propB;
 
 	while (!sorted && danger > 0) {
 		danger--;
 		sorted = true;
 		for (var i = 0; i < this.length-1; i++) {
 			for (var j = i; j < this.length; j++) {
-				if (lowToHigh) {
-					if (this[i][a] > this[j][a]) {
+				propA = this[i].hasOwnProperty(a) ? this[i][a] : 0;
+				propB = this[j].hasOwnProperty(a) ? this[j][a] : 0;
+				if (highToLow) {
+					if (propA < propB) {
 						var old = this[j];
 						this[j] = this[i];
 						this[i] = old;
@@ -2490,7 +3787,7 @@ baa.group.sort = function (a,lowToHigh) {
 					}
 				}
 				else {
-					if (this[i][a] < this[j][a]) {
+					if (propA > propB) {
 						var old = this[j];
 						this[j] = this[i];
 						this[i] = old;
@@ -2500,18 +3797,21 @@ baa.group.sort = function (a,lowToHigh) {
 			}
 		}
 	}
-	//TODO: Dit weghalen
-	if (danger <= 0) {
-		print("SAVED FROM INFINITE LOOP!");
-	}
-	else {
-		print("Sorting succesfull");
-	}
 }
 
 
 //Timer
 //////////////////////////////////
+
+/**
+ * A manager for baa.timer objects. Automatically updates and removes timers made with it.
+ * @constructor
+ * @see  baa.timer
+ * @property {object} obj The object that owns this timermanager. Functions will be called with the object as this. 
+ * @property {array} timers A list of all the timers owned by this timermanager.
+ * @property {boolean} playing All the timers will only update when this is true.
+ * @param {object} [object] The owner of this timermanager.
+ */
 baa.timerManager = Class.extend("baa.timerManager");
 
 baa.timerManager.init = function (object) {
@@ -2520,30 +3820,54 @@ baa.timerManager.init = function (object) {
 	this.timers = [];
 	this.playing = true;
 	this.new = this.newTimer;
-	this.newTimer = null;
+	delete(this.newTimer);
 }
 
+/**
+ * Sets an object to this timermanager.
+ * @param {object} object The object you want to set to this timermanager.
+ */
 baa.timerManager.setObject = function (object) {
 	baa._checkType("object",object,"object");
 	this.obj = object;
 }
 
+/**
+ * Returns the object set to this timermanager.
+ * @return {object} The object set to this timermanager.
+ */
 baa.timerManager.getObject = function () {
 	return this.obj;
 }
 
-baa.timerManager.newTimer = function (obj,time,loop,once,cond,func,args) {
+/**
+ * Create a new timer belonging to this timer manager.
+ * @alias new
+ * @param  {object} [obj] The object you want to connect to the condition and function of this timer.
+ * If the first argument is a number, this will be taken as the argument time, and shift all other arguments, and the manager's object will be used instead.
+ * @param  {number} time The length of the timer in seconds.
+ * @param  {string} [mode="normal"] If the timer should loop, die after one loop, or neither. Options: "loop", "once", "normal".
+ * @param  {function|string} [func] The function you want to call each time the timer is finished. 
+ * This can either be the name of the function as a string, or a function on its own.
+ * @param  {object|function} [cond] A condition that must be true for the timer to play. 
+ * This can either be a function returning a boolean, or an object with properties that have to be a certain value.
+ * @return {baa.timer} The new timer.
+ */
+baa.timerManager.newTimer = function (obj,time,mode,func,cond) {
 	var t;
 	if (typeof(obj) == "number") {
-		t = baa.timer.new(obj,time,loop,once,this.obj,cond,func,this);
+		t = baa.timer.new(time,mode,obj,func,cond,this);
 	}
 	else {
-		t = baa.timer.new(time,loop,once,obj,cond,func,args,this);
+		t = baa.timer.new(obj,time,loop,once,this.obj,func,cond,this);
 	}
 	this.timers.push(t);
 	return t;
-
 }
+
+/**
+ * Updates all the timers.
+ */
 baa.timerManager.update = function () {
 	if (this.playing) 	{
 		for (var i = this.timers.length - 1; i >= 0; i--) {
@@ -2553,61 +3877,85 @@ baa.timerManager.update = function () {
 	}
 }
 
+/**
+ *	Resumes the manager updating the timers.
+ */
 baa.timerManager.play = function () {
 	this.playing = true;
 }
 
+/**
+ * Pauses the manager from updating timers.
+ */
 baa.timerManager.pause = function () {
 	this.playing = false;
 }
 
+/**
+ * A global timermanager. Useful for if you want to make quick, automatically updating, disposable timers. You can not set a main object to this manager.
+ */
 Timer = baa.timerManager.new();
+delete(Timer.setObject);
+delete(Timer.getObject);
 
-baa.timer = Class.extend("baa.timer");
 
 /**
- * Create a new timer
- * @param  {float} time    			The length of the timer
- * @param  {bool} loop    			If the timer should loop or not (default: false);
- * @param  {object} obj     		The object used for the next arguments
- * @param  {object}{function} cond  Set what condition to be true for the timer to run. Can be function or object.
- * @param  {function}{string} func  What function to call when the timer is finished
- * @param  {array} args    			An array of arguments for the function
- * @param  {object} manager 		The manager assigned to this timer
- * @return {object}         		The timer
+ * A tool to make easy timers. You can make them loop, give them condiitons for playing, and make the call a function when they're done.
+ * @see  baa.timerManager
+ * @constructor
+ * @param  {number} time The length of the timer in seconds.
+ * @param  {string} [mode="normal"] If the timer should loop, die after one loop, or neither. Options: "loop", "once", "normal".
+ * @param  {object} [obj] The object you want to connect to the condition and function of this timer.
+ * @param  {object|function} [cond] A condition that must be true for the timer to play. 
+ * This can either be a function returning a boolean, or an object with properties that have to be a certain value.
+ * @param  {function|string} [func] The function you want to call each time the timer is finished.
+ * @param  {object} [manager] The manager that owns this timer. Should only be given by the manager itself. 
+ * This can either be the name of the function as a string, or a function on its own.
  */
-baa.timer.init = function (time,loop,once,obj,cond,func,args,manager) {
+baa.timer = Class.extend("baa.timer");
+
+baa.timer.init = function (time,mode,obj,func,cond,manager) {
 	baa._checkType("time",time,"number");
 	baa._checkType("loop",loop,"boolean",null);
 	baa._checkType("once",once,"boolean",null);
 	baa._checkType("object",obj,"object",null);
 	baa._checkType("condition",cond,"object","function",null);
 	baa._checkType("function",func,"function","string",null);
-	baa._checkType("arguments",args,"object",null);
 
-	this.manager = manager;
+	this._manager = manager;
 	this.time = time;
 	this.timeStart = time;
 	this.condition = cond;
 	this.condType = typeof(this.condition);
-	this.loop = loop || false;
-	this.once = once || false;
+	this.mode = mode || "normal";
 	this.obj = obj;
 	this.func = func;
-	this.args = args;
 	this.playing = true;
 	this.ended = false;
 	this.dead = false;
 }
 
+/**
+ * Sets an object to this timer that will be connected with the condition and function. 
+ * @param {object} obj The object you want to set.
+ */
 baa.timer.setObject = function (obj) {
 	this.obj = obj;
 }
 
+/**
+ * Returns the object set to this timer. If no object is set yet, it will return null.
+ * @return {object} The object set to this timer.
+ */
 baa.timer.getObject = function () {
-	return this.obj || (this.manager ? this.manager.getObject() : null);
+	return this.obj || (this._manager ? this._manager.getObject() : null);
 }
 
+/**
+ * Sets the condition of the timer that needs to be true for it to play. This can either be a function returning a boolean, 
+ * or an object with properties that have to be a certain value.
+ * @param {object|function} condition The condition of the timer that needs to be true for it to play.
+ */
 baa.timer.setCondition = function (condition) {
 	baa._checkType("condition",condition,"function","object");
 
@@ -2615,6 +3963,9 @@ baa.timer.setCondition = function (condition) {
 	this.condType = typeof(this.condition);
 }
 
+/**
+ * Updates the timer.
+ */
 baa.timer.update = function () {
 	if (this.playing && !this.dead) {
 		if (this.loop) {
@@ -2640,7 +3991,7 @@ baa.timer.update = function () {
 				this.time -= dt;
 				if (this.time < 0) {
 					if (this.func) {
-						obj[this.func].apply(obj,this.args);
+						baa.util.call(this.obj,this.func)
 					}
 
 					this.ended = true;
@@ -2659,163 +4010,265 @@ baa.timer.update = function () {
 	}
 }
 
+/**
+ * Resets the timer, making it start from the beginning. It does not revert killing.
+ */
 baa.timer.reset = function () {
 	this.ended = false;
 	this.time = this.timeStart;
 	this.playing = true;
 }
 
+/**
+ * Pauses the timer from playing.
+ */
 baa.timer.pause = function () {
 	this.playing = false; 
 }
 
+/**
+ * Starts the timer, or resumes the timer from pausing.
+ */
 baa.timer.play = function () {
 	this.playing = true;
 }
 
+/**
+ * Stops the timer from playing, and starts at the beginning.
+ * @return {[type]} [description]
+ */
 baa.timer.stop = function () {
 	this.playing = false;
 	this.time = this.timeStart;
 }
 
+/**
+ * Kills the timer, preventing it from updating, and removing itself from its managers timer list.
+ */
 baa.timer.kill = function () {
 	this.dead = true;
 	this.playing = false;
 }
 
+/**
+ * Returns if the timer is finished. If a finished timer loops, it stops being finished at the next update.
+ * @return {boolean} If the timer is finished.
+ */
 baa.timer.isDone = function () {
 	return this.ended;
 }
 
+
 //Tween
 //////////////////////////////////
+
+/**
+ * A manager for baa.tween objects. Automatically updates and removes tweens made with it.
+ * @constructor
+ * @see baa.tween
+ * @property {object} obj The object that owns this tweenmanager. Whenever you make a new tween with this tweenmanager, it will use this object.
+ * @property {array} tweens A list of all the tweens owned by this tweenmanager.
+ * @property {boolean} playing All the tweens will only update when this is true.
+ * @param {object} [object] The owner of this tweenmanager.
+ */
 baa.tweenManager = Class.extend("baa.tweenManager");
 
 baa.tweenManager.init = function (obj) {
 	this.obj = obj;
 	this.tweens = [];
+	this.playing = true;
 }
 
+/**
+ * Make a new tween.
+ * @param  {object} [obj]  The object you want to tween. If you use a number instead, 
+ * the function will take this argument as the rate and shift all other arguments. In this case it will use the manager's object.
+ * @param  {number} rate  How long the tween should take in seconds.
+ * @param  {object} vars  An object with properties of the object, and the values you want them to tween to.
+ * @param  {boolean} force Whether to overwrite properties that are already being tweened. 
+ * If true, the tween already using these properties will have these properties removed.
+ * @return {baa.tween}	The tween created, allowing you to extend the tween by using .to, adding a delay with .delay, or easing with .ease.
+ */
 baa.tweenManager.to = function (obj,rate,vars,force) {
-	
 	if (typeof(obj) == "number") {
 		force = vars;
 		vars = rate;
 		rate = obj;
 		obj = this.obj;
 	}
-	baa._checkType("rate",rate,"number");
-	baa._checkType("vars",vars,"object");
-	baa._checkType("force",force,"boolean",null);
-	baa._checkType("object",obj,"object");
 
-	var tween = baa.tween.new(this);
-	tween.obj = obj || this.obj;
-	tween.rate = rate > 0 ? 1/rate : 1;
-	tween.vars = vars;
-	tween.force = force || false;
+	baa._checkType("force",force,"boolean",null);
+
+	var tween = baa.tween.new(obj,rate,vars,this);
+	tween._force = force || false;
 	this.tweens.push(tween);
 	return tween;
 }
 
+/**
+ * Updates all the tweens
+ */
 baa.tweenManager.update = function () {
-	for (var i = this.tweens.length - 1; i >= 0; i--) {
-		if (this.tweens[i].dead) { this.tweens.splice(i,1); continue; }
-		this.tweens[i].update();
+	if (this.playing) {
+		for (var i = this.tweens.length - 1; i >= 0; i--) {
+			if (this.tweens[i].dead) { this.tweens.splice(i,1); continue; }
+			this.tweens[i].update();
+		}
 	}
 }
 
-baa.tweenManager.getObject = function () {
+/**
+ * Set an object that the manager will use for its tweens.
+ */
+baa.tweenManager.setObject = function () {
 	return this.obj;
-} 
-
-Tween = baa.tweenManager.new();
-
-baa.tween = Class.extend("baa.tween");
-
-baa.tween.init = function (manager) {
-	this.manager = manager
-	this._delay = 0;
-	this.inited = false;
-	this.progress = 0;
-	this.inout = "in";
-	this.easing = "linear";
-	this.dead = false;
-	this.obj = this.manager.getObject();
 }
 
+/**
+ * Returns the object the manager is using for its tweens.
+ * @return {object} The object the manager is using for its tweens.
+ */
+baa.tweenManager.getObject = function () {
+	return this.obj;
+}
+
+/**
+ *	Resumes the manager updating its tweens.
+ */
+baa.tweenManager.play = function () {
+	this.playing = true;
+}
+
+/**
+ *	Pauses the manager updating its tweens.
+ */
+baa.tweenManager.pause = function () {
+	this.playing = false;
+}
+
+/**
+ * A global tweenmanager. Useful for if you want to make quick, automatically updating, disposable tweens. You can not set a main object to this manager.
+ */
+Tween = baa.tweenManager.new();
+delete(Tween.getObject);
+delete(Tween.setObject);
+
+/**
+ * Making transitions of the value of properties easier. 
+ * Make objects move from one point to another, use delay, easing, 
+ * and call multiple tweens in a row. It is highly recommended that you use a tweenmanager.
+ * @constructor
+ * @param  {object} obj  The object you want to tween.
+ * @param  {number} rate  How long the tween should take in seconds.
+ * @param  {object} vars  An object with properties of the object, and the values you want them to tween to.
+ * @param  {object} [manager] The manager that owns this tween. Should only be given by the manager itself.
+ * @see baa.tweenManager
+ */
+baa.tween = Class.extend("baa.tween");
+
+baa.tween.init = function (obj,rate,vars,manager) {
+	baa._checkType("object",obj,"object");
+	baa._checkType("rate",rate,"number");
+	baa._checkType("vars",vars,"object");
+
+	this._obj = obj;
+	this._rate = rate > 0 ? 1/rate : 1;
+	this._vars = vars;
+	this._manager = manager
+
+	this._delay = 0;
+	this._started = false;
+	this._progress = 0;
+	this._easeMode = "in";
+	this._easing = "linear";
+	this.dead = false;
+}
+
+/**
+ * Updates the tween
+ */
 baa.tween.update = function () {
 	if (this.dead) { return; };
 	if (this._delay > 0) { this._delay -= dt; return;};
-	if (!this.inited) { 
-		this.start();
+	if (!this._started) { 
+		this._start();
 		if (this.startFunc) {
-			baa.tween.__call(this.startObj,this.startFunc);
+			baa.util.call(this.startObj,this.startFunc);
 		}
 	}
-	this.progress += this.rate * dt;
-	var p = this.progress;
+	this._progress += this._rate * dt;
+	var p = this._progress;
 	p = p >= 1 ? 1 : p;
-	p = baa.tween.__ease(p,this.inout,this.easing);
-	for (var prop in this.vars) {
-		this.obj[prop] =  this.vars[prop].start + p * this.vars[prop].diff;
+	p = baa.tween.__ease(p,this._easeMode,this._easing);
+	for (var prop in this._vars) {
+		this._obj[prop] =  this._vars[prop].start + p * this._vars[prop].diff;
 	}
 	if (this.updateFunc) {
-		baa.tween.__call(this.updateObj,this.updateFunc);
+		baa.util.call(this.updateObj,this.updateFunc);
 	}
-	if (this.progress >= 1) {
+	if (this._progress >= 1) {
 		if (this.completeFunc) { 
-			baa.tween.__call(this.completeObj,this.completeFunc);
+			baa.util.call(this.completeObj,this.completeFunc);
 		}
 		this.dead = true;
 		if (this._after) {
-			this.manager.tweens.push(this._after);
+			this._manager.tweens.push(this._after);
 		}
 	}
 }
 
-baa.tween.start = function() {
+/**
+ * Starts the tween.
+ */
+baa.tween._start = function() {
 	//Check if there are duplicates
-	for (var i = 0; i < this.manager.tweens.length; i++) {
-		var twn = this.manager.tweens[i];
+	if (this._manager) {
+		for (var i = 0; i < this._manager.tweens.length; i++) {
+			var twn = this._manager.tweens[i];
 
-		//We only check for inited, alive tweens.
-		//Since this tween itself is not inited yet, we automatically check if it is itself.
-		if (twn.inited && !twn.dead) {
-			//If they are the same object
-			if (this.obj == twn.obj) {
-				//Make an array of all they keys both tweens have
-				var same = [];
-				for (var key in this.vars) {
-					for (var key2 in twn.vars) {
-						if (key == key2) {
-							same.push(key);
+			//We only check for inited, alive tweens.
+			//Since this tween itself is not inited yet, we automatically check if it is itself.
+			if (twn._started && !twn.dead) {
+				//If they are the same object
+				if (this._obj == twn.obj) {
+					//Make an array of all they keys both tweens have
+					var same = [];
+					for (var key in this._vars) {
+						for (var key2 in twn.vars) {
+							if (key == key2) {
+								same.push(key);
+							}
 						}
 					}
-				}
-				for (var j = 0; j < same.length; j++) {
-					//Wh1ether we use force to overwrite it or not
-					if (this.force) {
-						delete(twn.vars[same[j]]);
-					}
-					else {
-						delete(this.vars[same[j]]);
+					for (var j = 0; j < same.length; j++) {
+						//Wh1ether we use force to overwrite it or not
+						if (this._force) {
+							delete(twn.vars[same[j]]);
+						}
+						else {
+							delete(this._vars[same[j]]);
+						}
 					}
 				}
 			}
 		}
 	}
 
-	for (var prop in this.vars) {
-		this.vars[prop] = {
-		start : this.obj[prop],
-		diff : this.vars[prop] - this.obj[prop]
+	for (var prop in this._vars) {
+		this._vars[prop] = {
+		start : this._obj[prop],
+		diff : this._vars[prop] - this._obj[prop]
 		};
 	}
 
-	this.inited = true;
+	this._started = true;
 }
 
+/**
+ * Sets a delay to the tween
+ * @param  {number} delay The delay you want to set in seconds
+ * @return {baa.tween}  The tween to allow further extending.
+ */
 baa.tween.delay = function (delay) {
 	baa._checkType("delay",delay,"number");
 
@@ -2823,83 +4276,130 @@ baa.tween.delay = function (delay) {
 	return this;
 }
 
-baa.tween.ease = function (inout,easing) {
-	baa._checkType("inout",inout,"string");
+/**
+ * Sets the easing to the tween. Easing adapts the way the property transitions to its goal. 
+ * @param  {string} easeMode If the easing should be used at the start, at the end, or both.
+ * Options: "in", "out", "inout".
+ * @param {string} easing The easing you want to use.
+ * Options: "linear", "quad", "cubic", "quart", "quint", "expo", "sine", "circ", "back", "elastic"
+ * @return {baa.tween}  The tween to allow further extending.
+ */
+baa.tween.ease = function (easeMode, easing) {
+	baa._checkType("easeMode",easeMode,"string");
 	baa._checkType("easing",easing,"string");
 
-	this.inout = inout;
-	this.easing = easing;
+	this._easeMode = easeMode;
+	this._easing = easing;
 	return this;
 }
 
-baa.tween.onStart = function (f,obj) {
+/**
+ * Sets a function that will be called when the tween starts (after the delay).
+ * @param  {string|function} f   The function you want to have called. 
+ * This can either be the name of the function as a string, or a function on its own.
+ * @param  {object} [obj] The object you want to have the function called. If null, the tween's object is used instead.
+ * @return {baa.tween} The tween to allow further extending.     
+ */
+baa.tween.onStart = function (f, obj) {
 	baa._checkType("function",f,"function","string");
 	baa._checkType("object",obj,"object",null);
 
 	this.startFunc = f;
-	this.startObj = obj || this.obj;
+	this.startObj = obj || this._obj;
 	return this;
 }
 
-baa.tween.onUpdate = function (f,obj) {
+/**
+ * Sets a function that will be called every time the tween updates.
+ * @param  {string|function} f   The function you want to have called. 
+ * This can either be the name of the function as a string, or a function on its own.
+ * @param  {object} [obj] The object you want to have the function called. If null, the tween's object is used instead.
+ * @return {baa.tween} The tween to allow further extending.     
+ */
+baa.tween.onUpdate = function (f, obj) {
 	baa._checkType("function",f,"function","string");
 	baa._checkType("object",obj,"object",null);
 
 	this.updateFunc = f;
-	this.updateObj = obj || this.obj;
+	this.updateObj = obj || this._obj;
 	return this;
 }
 
-baa.tween.onComplete = function(f,obj) {
+/**
+ * Sets a function that will be called when the tween ends.
+ * @param  {string|function} f   The function you want to have called. 
+ * This can either be the name of the function as a string, or a function on its own.
+ * @param  {object} [obj] The object you want to have the function called. If null, the tween's object is used instead.
+ * @return {baa.tween} The tween to allow further extending.     
+ */
+baa.tween.onComplete = function(f, obj) {
 	baa._checkType("function",f,"function","string");
 	baa._checkType("object",obj,"object",null);
 
 	this.completeFunc = f;
-	this.completeObj = obj || this.obj;
+	this.completeObj = obj || this._obj;
 	return this;
 }
 
+/**
+ * Stops the tween, killing it.
+ */
 baa.tween.stop = function () {
 	this.dead = true;
 }
 
+/**
+ * Sets the tween's progress to 1, setting properties to its final value in the next update.
+ * @return {[type]} [description]
+ */
 baa.tween.rush = function () {
-	this.progress = 1;
+	this._progress = 1;
 }
 
-baa.tween.to = function (obj,rate,vars,force) {
+/**
+ * Creates a new tween. This can only be done with tweens owned by a tweenmanager.  
+ * @param  {object} obj  The object you want to tween. If this is a number instead 
+ * the function will take this argument as the rate and shift all other arguments. In this case it will use the manager's object.
+ * @param  {number} rate  How long the tween should take in seconds.
+ * @param  {object} vars  An object with properties of the object, and the values you want them to tween to.
+ * @param  {boolean} force Whether to overwrite properties that already being tweened.
+ * @return {baa.tween}       The new tween.
+ */
+baa.tween.to = function (obj, rate, vars, force) {
+	if (!this.manager) { throw("This function can only be called by tweens that are owned by a tweenmanager."); }
 	if (typeof(obj) == "number") {
 		force = vars;
 		vars = rate;
 		rate = obj;
-		obj = this.obj;
+		obj = this._obj;
 	}
 
 	baa._checkType("rate",rate,"number");
 	baa._checkType("vars",vars,"object");
 	baa._checkType("force",force,"boolean",null);
 	
-	this._after = baa.tween.new(this.manager);
-	this._after.obj = obj;
-	this._after.rate = rate > 0 ? 1/rate : 1;
-	this._after.vars = vars;
-	this._after.force = force || false;
+	this._after = baa.tween.new(obj,rate,vars,this._manager);
+	this._after._force = force || false;
 	return this._after;
 }
 
-baa.tween.__call = function (obj,func) {
-	typeof(func) == "string" ? obj[func]() : func(obj);
-}
-
-baa.tween.__ease = function (p,inout,easing) {
-	if (inout == "out") {
+/**
+ * Adapts progress with easing.
+ * @param  {number} p      The progress of the tween. A number between 0 and 1.
+ * @param  {string} easeMode  The easemode to use.
+ * @param  {string} easing The easing type.
+ * @return {number}        The adapted progress.
+ */
+baa.tween.__ease = function (p, easeMode, easing) {
+	if (easing == "linear") { return p; }
+	if (easeMode == "out") {
 		p = 1 - p;
 		p = 1 - baa.tween["__" + easing](p);
 	}
-	else if (inout == "in") {
+	else if (easeMode == "in") {
 		p = baa.tween["__" + easing](p);
 	}
-	else if (inout == "inout") {
+	else if (easeMode == "easeMode") {
 		p = p * 2;
 		if (p < 1) {
 			return .5 * (baa.tween["__" + easing](p));
@@ -2909,10 +4409,6 @@ baa.tween.__ease = function (p,inout,easing) {
 			return .5 * (1 - (baa.tween["__" + easing](p))) + .5;
 		}
 	}
-	return p;
-}
-
-baa.tween.__linear = function (p) {
 	return p;
 }
 
@@ -2956,6 +4452,7 @@ baa.tween.__elastic = function (p) {
 /////////////////////////////
 
 //Debug
+
 baa._debug = Class.extend("baa._debug");
 
 baa._debug.init = function () {
@@ -3337,6 +4834,7 @@ baa._debug.window.drawData = function () {
 	baa.graphics.setScissor(this.x,this.y,this.width,this.height);
 	var i = 0;
 
+
 	this.longestKeyWord = 0;
 
 	for (var key in this.obj) {
@@ -3369,8 +4867,8 @@ baa._debug.window.drawData = function () {
 
 		if (type != "function" /* && this.obj[key]!=undefined */) {
 			if (sbstr == "_" && this.showPrivates || sbstr != "_" ) {
-				baa.graphics.setAlpha(0.8);
 				baa.graphics.setColor(baa.debug.types[type])
+				baa.graphics.setAlpha(0.8);
 				var y = this.getDataY(i) - 3;
 				rect.set(this.x,y,this.width,this.textHeightMargin);
 				if (y > this.y + 40 && y < this.y + this.height) {
