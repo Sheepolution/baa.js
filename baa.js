@@ -14,8 +14,11 @@ BB:::::B     B:::::B         A:::::::A                        A:::::::A
 BB:::::BBBBBB::::::BA:::::A             A:::::A      A:::::A             A:::::A   
 B:::::::::::::::::BA:::::A               A:::::A    A:::::A               A:::::A  
 B::::::::::::::::BA:::::A                 A:::::A  A:::::A                 A:::::A 
-BBBBBBBBBBBBBBBBBAAAAAAA                   AAAAAAAAAAAAAA                   AAAAAAA*/
+BBBBBBBBBBBBBBBBBAAAAAAA                   AAAAAAAAAAAAAA                   AAAAAAA
 
+Barely an angine
+
+*/
 
 
 /**
@@ -48,7 +51,46 @@ printf = function () {
 //////////////
 
 /**
- * Class object to create classes
+ * Let's you create classes, that allow extending, implementing, and type checking.
+ * @example
+ * //Create a new class.
+ * Animal = Class.extend("Animal");
+ *
+ * //Static variable
+ * Animal.types = [
+ * 	"Mammal",
+ * 	"Fish",
+ * 	"Insect"
+ * ]
+ * 
+ * //The constructor. This is called when creating a new instance.
+ * Animal.init = function () {
+ * 		this.health = 100;
+ * 		
+ * }
+ *
+ * //Give functions to the class like this.
+ * Animal.draw = function () {
+ * 		baa.graphics.rectangle("fill",100,100,this.health);
+ * }
+ *
+ * //Extend an existing class
+ * Bear = Animal.extend("Bear");
+ *
+ *
+ * Bear.init = function () {
+ * 		//Call the original function of the extended class
+ * 		Bear.super.init();
+ * }
+ *
+ * Bear.draw = function () {
+ * 		Bear.super.draw();
+ * }
+ *
+ * //Static function. You can't use 'this' here.
+ * Bear.__doStuff = function () {
+ * 
+ * }
  * @class
  * @type {object}
  */
@@ -232,7 +274,7 @@ var _baa_init = function () {
 }
 
 /**
- * baa.js is a library created by Daniël Haazen.
+ * baa.js is a library created by Daniël Haazen. It's heavily inspired by the LÖVE framework.
  * @constructor
  * @type {object}
  */
@@ -348,11 +390,11 @@ baa.point.set = function (x,y) {
  * Clones the x and y of another point
  * @param  {baa.point} p The point to clone from
  */
-baa.point.clone = function (p) {
-	baa._checkType("point",p,"baa.point");
+baa.point.clone = function (point) {
+	baa._checkType("point",point,"baa.point");
 
-	this.x = p.x;
-	this.y = p.y;
+	this.x = point.x;
+	this.y = point.y;
 }
 
 /**
@@ -360,10 +402,10 @@ baa.point.clone = function (p) {
  * @param  {baa.rectangle} r The rectangle you want to check overlap with
  * @return {boolean}   If there is overlap
  */
-baa.point.overlaps = function (r) {
-	baa._checkType("rectangle",r,"baa.rect");
-	return r.x + r.width > this.x && r.x < this.x
-		&& r.y + r.height > this.y && r.y < this.y;
+baa.point.overlaps = function (rect) {
+	baa._checkType("rect",r,"baa.rect");
+	return rect.x + rect.width > this.x && rect.x < this.x
+		&& rect.y + rect.height > this.y && rect.y < this.y;
 }
 
 //Rect
@@ -427,13 +469,13 @@ baa.rect.set = function (x,y,width,height) {
  * @param  {baa.rectangle} r The rectangle to clone from
  * @override
  */
-baa.rect.clone = function (r) {
-	baa._checkType("rect",r,"baa.rect");
+baa.rect.clone = function (rect) {
+	baa._checkType("rect",rect,"baa.rect");
 
-	this.x = r.x;
-	this.y = r.y;
-	this.width = r.width;
-	this.height = r.height;
+	this.x = rect.x;
+	this.y = rect.y;
+	this.width = rect.width;
+	this.height = rect.height;
 }
 
 /**
@@ -489,7 +531,7 @@ baa.rect.bottom = function (y) {
  * @param  {number} [x] The horizontal position you want the horizontal center to be at
  * @return {number}   The horizontal position the horizontal center is at
  */
-baa.rect.xCenter = function (x) {
+baa.rect.centerX = function (x) {
 	baa._checkType("x",x,"number",null);
 
 	if (x!=null) { this.x = x - this.width/2 };
@@ -501,7 +543,7 @@ baa.rect.xCenter = function (x) {
  * @param  {number} [y] The vertical position you want the vertical center to be at
  * @return {number}   The vertical position the vertical center is at
  */
-baa.rect.yCenter = function (y) {
+baa.rect.centerY = function (y) {
 	baa._checkType("y",y,"number",null);
 
 	if (y!=null) { this.y = y - this.height/2 };
@@ -514,10 +556,10 @@ baa.rect.yCenter = function (y) {
  * @return {boolean}   If there is overlap
  * @override
  */
-baa.rect.overlaps = function (r) {
-	baa._checkType("rect",r,"baa.rect","baa.point");
-	return this.x + this.width > r.x && this.x < r.x + (r.width || 0) 
-		&& this.y + this.height > r.y && this.y < r.y + (r.height || 0) ;
+baa.rect.overlaps = function (rect) {
+	baa._checkType("rect",rect,"baa.rect","baa.point");
+	return this.x + this.width > rect.x && this.x < rect.x + (rect.width || 0) 
+		&& this.y + this.height > rect.y && this.y < rect.y + (rect.height || 0) ;
 }
 
 /**
@@ -525,10 +567,10 @@ baa.rect.overlaps = function (r) {
  * @param  {baa.rectangle|baa.point} r The rectangle or point you want to check horizontal overlap with
  * @return {boolean}   If there is horizontal overlap
  */
-baa.rect.overlapsX = function (r) {
-	baa._checkType("rect",r,"baa.rect","baa.point");
+baa.rect.overlapsX = function (rect) {
+	baa._checkType("rect",rect,"baa.rect","baa.point");
 
-	return this.x + this.width > r.x && this.x < r.x + r.width;
+	return this.x + this.width > rect.x && this.x < rect.x + r.width;
 }
 
 /**
@@ -537,9 +579,9 @@ baa.rect.overlapsX = function (r) {
  * @return {boolean}   If there is vertical overlap
  */
 baa.rect.overlapsY = function (r) {
-	baa._checkType("rect",r,"baa.rect","baa.point");
+	baa._checkType("rect",rect,"baa.rect","baa.point");
 
-	return this.y + this.height > r.y && this.y < r.y + r.height;
+	return this.y + this.height > rect.y && this.y < rect.y + r.height;
 }
 
 //Circle
@@ -595,12 +637,12 @@ baa.circle.set = function (x,y,size) {
  * @param  {baa.circle} r The circle to clone from
  * @override
  */
-baa.circle.clone = function (c) {
-	baa._checkType("circle",c,"baa.circle");
+baa.circle.clone = function (circle) {
+	baa._checkType("circle",circle,"baa.circle");
 
-	this.x = r.x;
-	this.y = r.y;
-	this.size = r.size;
+	this.x = circle.x;
+	this.y = circle.y;
+	this.size = circle.size;
 }
 
 /**
@@ -609,10 +651,10 @@ baa.circle.clone = function (c) {
  * @return {boolean}   If there is overlap
  * @override
  */
-baa.circle.overlaps = function (r) {
-	baa._checkType("circle",r,"baa.circle","baa.point");
+baa.circle.overlaps = function (circle) {
+	baa._checkType("circle",circle,"baa.circle","baa.point");
 
-	return Math.sqrt(Math.pow(this.x - r.x,2) + Math.pow(this.y - r.y,2)) < this.size/2 + (r.size || 0)/2;
+	return Math.sqrt(Math.pow(this.x - circle.x,2) + Math.pow(this.y - circle.y,2)) < this.size/2 + (circle.size || 0)/2;
 }
 
 
@@ -690,6 +732,20 @@ baa.sprite.draw = function () {
 			baa.sprite.super.draw(this);
 		}
 	}
+
+	if (baa.debug && baa.debug.active) {
+		this.drawDebug();
+	}
+}
+
+/**
+ * Draws debug lines. This is called when baa.debug is active.
+ */
+baa.sprite.drawDebug = function () {
+	baa.graphics.setAlpha(1);
+	baa.graphics.setLineWidth(2);
+	baa.graphics.setColor(255,0,0);
+	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height);
 }
 
 /**
@@ -946,19 +1002,6 @@ baa.entity.update = function () {
  */
 baa.entity.draw = function () {
 	baa.entity.super.draw(this);
-	if (baa.debug && baa.debug.active) {
-		this.drawDebug();
-	}
-}
-
-/**
- * Draws debug lines. This is called when baa.debug is active.
- */
-baa.entity.drawDebug = function () {
-	baa.graphics.setAlpha(1);
-	baa.graphics.setLineWidth(2);
-	baa.graphics.setColor(255,0,0);
-	baa.graphics.rectangle("line",this.x,this.y,this.width,this.height);
 }
 
 /**
@@ -1109,23 +1152,23 @@ baa.button.update = function () {
 	baa.button.super.update(this);
 	if (this.overlaps(baa.mouse)) {
 		baa.mouse.setCursor("hand");
-		this.setAnimation("hover");
+		if (this.image) { this.setAnimation("hover"); };
 		if (baa.mouse.isPressed("l")) {
 			this.hold = true;
 		}
 	}
 	else {
-		this.setAnimation("idle");
+		if (this.image) {this.setAnimation("idle"); }
 	}
 
 	if (this.hold) {
-		this.setAnimation("hold");
+		if (this.image) { this.setAnimation("hold"); }
 	}
 
 	if ( ( this.onRelease && baa.mouse.isReleased("l") ) || (!this.onRelease && baa.mouse.isPressed("l")) ) {
 		if (this.hold && this.overlaps(baa.mouse)) {
 			this._active();
-			this.setAnimation("active");
+			if (this.image) { this.setAnimation("active") };
 		}
 		this.hold = false;
 	} 
@@ -1151,10 +1194,10 @@ baa.button.setImage = function (url,width,height) {
 	a2 = this._frames.length > 2 ? 3 : a1;
 	a3 = this._frames.length > 3 ? 4 : a2;
 	
-	this.addAnimation("idle",1,1);
-	this.addAnimation("hover",a1,a1);
-	this.addAnimation("hold",a2,a2);
-	this.addAnimation("active",a3,a3);
+	this.addAnimation("idle",[1]);
+	this.addAnimation("hover",[a1]);
+	this.addAnimation("hold",[a2]);
+	this.addAnimation("active",[a3]);
 }
 
 /**
@@ -1163,6 +1206,14 @@ baa.button.setImage = function (url,width,height) {
 baa.button._active = function () {
 	baa.util.call(this.obj,this.func);
 }
+
+/**
+ * Sets the function button needs to call when activated
+ */
+baa.button.setFunction =  function (func) {
+	this.func = func;
+}
+
 
 ///////////////////////////////
 ///////////////////////////////
@@ -1193,6 +1244,18 @@ baa.graphics._defaultCanvas = null;
  * @type {boolean}
  */
 baa.graphics._defaultSmooth = false;
+
+/**
+ * The default font
+ * @type {baa._font}
+ */
+baa.graphics._defaultFont;
+
+/**
+ * The scale of the game.1
+ * @type {Number}
+ */
+baa.graphics._globalScale = 1;
 
 /**
  * The current canvas
@@ -1226,6 +1289,12 @@ baa.graphics._backgroundColor = {r:0,g:0,b:0};
  * @type {baa.graphics._font}
  */
 baa.graphics._currentFont = null;
+
+/**
+ * A number that mimics the number of stack created and destroyed by baa.graphics.push and baa.graphics.pop.
+ * @type {Number}
+ */
+baa.graphics._stacks = 0;
 
 /**
  * The width of the canvas
@@ -1287,8 +1356,9 @@ baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 	baa._checkType("height",h,"number");
 	baa._checkType("rounding",r,"number",null);
 
+	if (mode != "scissor") { this.ctx.beginPath(); }
+	
 	if (r==null) {
-		this.ctx.beginPath();
 		h = h==null ? w : h;
 		this.ctx.rect(x,y,w,h);
 		this._mode(mode);
@@ -1300,7 +1370,7 @@ baa.graphics.rectangle = function (mode,x,y,w,h,r) {
 		w -= r*2;
 		y += r;
 		h -= r*2;
-		this.ctx.beginPath();
+
 		this.ctx.moveTo(x+r, y-r);
 		this.ctx.lineTo(x+w-r, y-r);
 		this.ctx.quadraticCurveTo(x+w+r, y-r, x+w+r, y+r);
@@ -1336,10 +1406,10 @@ baa.graphics.circle = function (mode,x,y,r) {
 	baa._checkType("y",y,"number");
 	baa._checkType("r",r,"number");
 
-	this.ctx.beginPath();
+	if (mode != "scissor") { this.ctx.beginPath(); }
+
 	this.ctx.arc(x,y,Math.abs(r),0,2*Math.PI);
 	this._mode(mode);
-	this.ctx.closePath();
 
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
@@ -1361,7 +1431,9 @@ baa.graphics.convex = function (mode,x,y,r,p,rot) {
 	baa._checkType("p",p,"number");
 
 	p = Math.max(3,p);
-	this.ctx.beginPath();
+
+	if (mode != "scissor") { this.ctx.beginPath(); }
+
 	for (var i = 0; i < p; i++) {
 		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + rot)*r,
 						y+Math.sin((i*(360/p))/180 *Math.PI + rot)*r);
@@ -1395,7 +1467,7 @@ baa.graphics.star = function (mode,x,y,r1,r2,p,r) {
 	r = r || 0;
 
 	p = Math.max(3,p);
-	this.ctx.beginPath();
+	if (mode != "scissor") { this.ctx.beginPath(); }
 
 	for (var i = 0; i < p; i++) {
 		this.ctx.lineTo(x+Math.cos((i*(360/p))/180 *Math.PI + r)*r1,
@@ -1430,7 +1502,8 @@ baa.graphics.arc = function (mode,x,y,r,a1,a2) {
 	baa._checkType("a1",a1,"number");
 	baa._checkType("a2",a2,"number");
 
-	this.ctx.beginPath();
+	if (mode != "scissor") { this.ctx.beginPath(); }
+
 	this.ctx.lineTo(x,y);
 	this.ctx.arc(x,y,Math.abs(r),a1,a2);
 	this.ctx.lineTo(x,y);
@@ -1488,7 +1561,9 @@ baa.graphics.line = function () {
  */
 baa.graphics.polygon = function (mode) {
 	baa._checkType("mode",mode,"string");
-	this.ctx.beginPath();
+
+	if (mode != "scissor") { this.ctx.beginPath(); }
+	
 	if (typeof(arguments[1]) == "object") {
 		var verts = arguments[1];
 
@@ -1530,9 +1605,9 @@ baa.graphics.polygon = function (mode) {
 baa.graphics.clear = function () {
 	this.push();
 	this.origin();
-	this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.b,this._backgroundColor.g);
+	this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b);
 	this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
-	this.ctx.fillStyle = this._rgb(this._color.r,this._color.b,this._color.g);
+	this.ctx.fillStyle = this._rgb(this._color.r,this._color.g,this._color.b);
 	this.pop();
 	if (baa.debug) { baa.debug.drawCalls++; };
 }
@@ -1865,6 +1940,7 @@ baa.graphics.newFont = function (name,size,style,height) {
 	return this._font.new(name,size,style,height);
 }
 
+baa.graphics._defaultFont = baa.graphics.newFont("arial",10);
 
 //Canvas
 /////////////////
@@ -2110,29 +2186,21 @@ baa.graphics.setCanvas = function (cvs) {
 }
 
 /**
- * Sets a rectangle on the canvas, that cuts off all graphics outside that box.
- * @param {number|null} x The horizontal position of the scissor. If this is null, it will remove the current scissor.
- * @param {number} y The vertical position of the scissor.
- * @param {number} width The width of the scissor
- * @param {number} height The height of the scissor
+ * Cuts out a shape, that makes only things drawn inside this shape to appear on the screen.
+ * @param {function} [shape] A function with geometry draw calls. The draw calls must use "scissor" as draw mode.
+ * @param {object} obj   The object to call the shape function with.
  */
-baa.graphics.setScissor = function (x,y,width,height) {
-	if (x!=null) {
-		baa._checkType("x",x,"number");
-		baa._checkType("y",x,"number");
-		baa._checkType("width",width,"number");
-		baa._checkType("height",height,"number");
+baa.graphics.setScissor = function (shape,obj) {
+	if (shape!=null) {
 		this.push();
 		this.ctx.beginPath();
-		this.ctx.rect(x,y,width,height);
-		this.ctx.closePath();
+		baa.util.call(obj,shape)
 		this.ctx.clip();
 	}
 	else {
 		this.pop();
 	}
 }
-
 
 //Get functions
 
@@ -2225,6 +2293,7 @@ baa.graphics.getTextWidth = function (text) {
  */
 baa.graphics.origin = function () {
 	this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+	this.ctx.scale(baa.graphics._globalScale,baa.graphics._globalScale);
 }
 
 /**
@@ -2277,13 +2346,17 @@ baa.graphics.shear = function (x,y) {
  */
 baa.graphics.push = function () {
 	this.ctx.save();
+	this._stacks++;
 }
 
 /**
  * Pops the highest stack, removing all translating, rotating, scaling and shearing on that stack.
  */
 baa.graphics.pop = function () {
-	this.ctx.restore();
+	if (this._stacks > 0) {
+		this.ctx.restore();
+		this._stacks--;
+	}
 }
 
 //Utils
@@ -2306,7 +2379,7 @@ baa.graphics._mode = function (mode) {
 		this.ctx.fill();
 		this.ctx.stroke();
 	}
-	else {
+	else if (mode != "scissor") {
 		throw new Error("Invalid mode " + mode);
 	}
 }
@@ -2711,7 +2784,7 @@ baa.keyboard._constant = {
  * @param  {object} event The Event object. 
  */
 baa.keyboard._downHandler = function(event) {
-	event.preventDefault();
+	// event.preventDefault();  
 	var keyPressed = baa.keyboard._constant[event.keyCode] || String.fromCharCode(event.keyCode).toLowerCase();
 	if (!baa.keyboard._keys[keyPressed]) {
 		baa.keyboard._pressed.push(keyPressed);
@@ -2823,13 +2896,20 @@ baa.mouse._constant = {
 	5:"wd"
 };
 
+baa.mouse._scaling =
+
+baa.mouse._relative = true;
+
+baa.mouse.ox = 0;
+baa.mouse.oy = 0;
+
 /**
  * This is called everything the mouse is moved.
  * @param  {object} event The Event object.
  */
 baa.mouse._move = function (event) {
-	baa.mouse.x = event.clientX-4;
-	baa.mouse.y = event.clientY-9;
+	baa.mouse.ox = baa.mouse.x = event.clientX-4
+	baa.mouse.oy = baa.mouse.y = event.clientY-9
 }
 
 /**
@@ -3101,11 +3181,19 @@ baa.run = function () {
 		if (baa.graphics.ctx) {
 			if (baa.config) {
 				var conf = {};
+				/*
+				t.width = The width of the canvas
+				t.height = The height of the canvas
+				t.identity = The identity of the filesystem
+				t.scale = The global scale
+				 */
 				baa.config(conf);
-				baa.graphics.canvas.width = conf.width != null ? conf.width : 800;
-				baa.graphics.canvas.height = conf.height != null ? conf.height : 600;
+				baa.graphics._globalScale = conf.scale!=null ? conf.scale : 1;
+				baa.graphics.canvas.width = (conf.width != null ? conf.width : 800) * baa.graphics._globalScale;
+				baa.graphics.canvas.height = (conf.height != null ? conf.height : 600) * baa.graphics._globalScale;
 				baa.graphics.width = baa.graphics.canvas.width;
 				baa.graphics.height = baa.graphics.canvas.height;
+				Camera.setWindow(0,0,baa.graphics.width,baa.graphics.height);
 				baa.filesystem.identity = typeof(conf.identity) == "string" ? conf.identity + "/" : null;
 				if (conf.release) {
 					baa.debug = null;
@@ -3141,14 +3229,20 @@ baa.loop = function (time) {
 		baa.debug.update();
 	}
 
+	baa.mouse.x = baa.mouse.ox/baa.graphics._globalScale;
+	baa.mouse.y = baa.mouse.oy/baa.graphics._globalScale;
+
 	if (baa.update) {
 		baa.mouse.setCursor("default");
 		baa.update();
 		Timer.update();
 		Tween.update();
+		Camera.update()
 	}
 
 	if (baa.debug) {
+		baa.mouse.x = baa.mouse.ox;
+		baa.mouse.y = baa.mouse.oy;
 		baa.debug.updateWindows();
 	}
 
@@ -3168,17 +3262,28 @@ baa.loop = function (time) {
  */
 baa.graphics._drawloop = function (a) {
 	if (baa.draw) {
-		// this._clearScreen();
 		this.ctx.fillStyle = this._rgb(this._backgroundColor.r,this._backgroundColor.g,this._backgroundColor.b);
 		this.ctx.globalAlpha = 1;
 		this.clear();
 		this.ctx.globalAlpha = this._color.a;
 		this.ctx.fillStyle = this._rgb(this._color.r,this._color.g,this._color.b);
 		this.ctx.strokeStyle = this._rgb(this._color.r,this._color.g,this._color.b);
-		this.setFont(this.newFont("arial",10));
+		this.setFont(this._defaultFont);
+		
+		for (var i = 0; i < this._stacks; i++) {
+			this.ctx.restore();
+			this._stacks--;
+		}
+
+		baa.graphics.origin();
+
+		Camera.start();
 		baa.draw();
+		Camera.stop();
 
 		if (baa.debug) {
+			baa.graphics.origin();
+			baa.graphics.scale(1/this._globalScale);
 			baa.debug.draw();
 		}
 	}
@@ -3447,11 +3552,11 @@ baa.util.clamp = function (a,min,max) {
 	return Math.min(max,Math.max(min,a));
 }
 
-baa.util.getAngle = function (a,b,c,d) {
-	baa._checkType("x1",a,"number");
-	baa._checkType("y1",b,"number");
-	baa._checkType("x2",c,"number");
-	baa._checkType("y2",d,"number");
+baa.util.angle = function (a,b,c,d) {
+	baa._checkType("x1",a,"number","object");
+	baa._checkType("y1",b,"number","object");
+	baa._checkType("x2",c,"number",null);
+	baa._checkType("y2",d,"number",null);
 
 	if (!c) {
 		return Math.atan2(b.y - a.y,b.x - a.x);
@@ -3461,7 +3566,7 @@ baa.util.getAngle = function (a,b,c,d) {
 	}
 }
 
-baa.util.getDistance = function (a,b,c,d) {
+baa.util.distance = function (a,b,c,d) {
 	if (typeof(a) === "object") {
 		baa._checkType("x1",a,"object");
 		baa._checkType("y1",b,"object");
@@ -3853,13 +3958,13 @@ baa.timerManager.getObject = function () {
  * This can either be a function returning a boolean, or an object with properties that have to be a certain value.
  * @return {baa.timer} The new timer.
  */
-baa.timerManager.newTimer = function (obj,time,mode,func,cond) {
+baa.timerManager.newTimer = function (obj,time,mode) {
 	var t;
 	if (typeof(obj) == "number") {
-		t = baa.timer.new(time,mode,obj,func,cond,this);
+		t = baa.timer.new(this.obj,time,mode,this);
 	}
 	else {
-		t = baa.timer.new(obj,time,loop,once,this.obj,func,cond,this);
+		t = baa.timer.new(obj,time,mode,this);
 	}
 	this.timers.push(t);
 	return t;
@@ -3914,22 +4019,28 @@ delete(Timer.getObject);
  */
 baa.timer = Class.extend("baa.timer");
 
-baa.timer.init = function (time,mode,obj,func,cond,manager) {
-	baa._checkType("time",time,"number");
-	baa._checkType("loop",loop,"boolean",null);
-	baa._checkType("once",once,"boolean",null);
+baa.timer.init = function (obj,time,mode,manager) {
 	baa._checkType("object",obj,"object",null);
-	baa._checkType("condition",cond,"object","function",null);
-	baa._checkType("function",func,"function","string",null);
+	baa._checkType("time",time,"number");
+	baa._checkType("time",mode,"string",null);
 
 	this._manager = manager;
+	this.obj = obj || this._manager.getObject();
+
 	this.time = time;
 	this.timeStart = time;
-	this.condition = cond;
-	this.condType = typeof(this.condition);
+
 	this.mode = mode || "normal";
-	this.obj = obj;
-	this.func = func;
+
+	this.condition;
+	this.condType;
+
+	this.updateFunc;
+	this.updateObj;
+
+	this.completeFunc;
+	this.completeObj;
+
 	this.playing = true;
 	this.ended = false;
 	this.dead = false;
@@ -3948,7 +4059,7 @@ baa.timer.setObject = function (obj) {
  * @return {object} The object set to this timer.
  */
 baa.timer.getObject = function () {
-	return this.obj || (this._manager ? this._manager.getObject() : null);
+	return this.obj;
 }
 
 /**
@@ -3989,10 +4100,19 @@ baa.timer.update = function () {
 				
 			if (succes) {
 				this.time -= dt;
-				if (this.time < 0) {
-					if (this.func) {
-						baa.util.call(this.obj,this.func)
+				if (this.updateFunc) {
+					if (this.updateObj) {
+						baa.util.call(this.updateObj,this.updateFunc);
 					}
+					else {
+						baa.util.call(this.updateFunc);
+					}
+				}
+
+				if (this.time < 0) {
+					// if (this.func) {
+					// 	baa.util.call(this.obj,this.func)
+					// }
 
 					this.ended = true;
 
@@ -4013,7 +4133,8 @@ baa.timer.update = function () {
 /**
  * Resets the timer, making it start from the beginning. It does not revert killing.
  */
-baa.timer.reset = function () {
+baa.timer.reset = function (time) {
+	this.timeStart = time || this.timeStart;
 	this.ended = false;
 	this.time = this.timeStart;
 	this.playing = true;
@@ -4058,6 +4179,29 @@ baa.timer.isDone = function () {
 	return this.ended;
 }
 
+/**
+ * Sets the function that will be called every time the timer updates.
+ * @param  {string|function} func The function to be called.
+ * @param  {object} obj  The object that this function is called with.
+ * @return {baa.timer}      The timer, to allow further extending.
+ */
+baa.timer.onUpdate = function (func,obj) {
+	this.updateFunc = func;
+	this.updateObj = obj || this.obj;
+	return this;
+}
+
+/**
+ * Sets the function that will be called every time the timer updates.
+ * @param  {string|function} func The function to be called.
+ * @param  {object} [obj]  The object that this function is called with. If no object is set, the timer's object will be used instead. 
+ * @return {baa.timer}      The timer, to allow further extending.
+ */
+baa.timer.onComplete = function (func,obj) {
+	this.completeFunc = func;
+	this.completeObj = obj || this.obj;
+	return this;
+}
 
 //Tween
 //////////////////////////////////
@@ -4120,8 +4264,8 @@ baa.tweenManager.update = function () {
 /**
  * Set an object that the manager will use for its tweens.
  */
-baa.tweenManager.setObject = function () {
-	return this.obj;
+baa.tweenManager.setObject = function (obj) {
+	this.obj = obj;
 }
 
 /**
@@ -4366,7 +4510,7 @@ baa.tween.rush = function () {
  * @return {baa.tween}       The new tween.
  */
 baa.tween.to = function (obj, rate, vars, force) {
-	if (!this.manager) { throw("This function can only be called by tweens that are owned by a tweenmanager."); }
+	if (!this._manager) { throw("This function can only be called by tweens that are owned by a tweenmanager."); }
 	if (typeof(obj) == "number") {
 		force = vars;
 		vars = rate;
@@ -4447,6 +4591,214 @@ baa.tween.__back = function (p) {
 baa.tween.__elastic = function (p) {
 	return -(Math.pow(2,(10*(p-1)))*Math.sin((p-1.075)*(Math.PI*2)/.3));
 }
+
+//Camera
+///////////////////////////
+
+/**
+ * A tool that helps you with cameras in your game. Make the camera follow an object, decide the size of the camera, and give it boundaries. You can also zoom in and rotate.
+ * @constructor
+ * @property {baa.rect} _window The rectangle everything is drawn in.
+ * @property {baa.rect} _world The world's boundaries. The camera won't go out of this.
+ * @property {baa.rect} _follow The object the camera should follow.
+ * @property {baa.point} _velocity The velocity of the camera. This is based on the distance of the object.
+ * @property {baa.point} _real The actual position of the camera, meaning the x position + the shake offset.
+ * @property {baa.point} _shakeOffset The offset of the camera shake.
+ * @property {number} _shakePower The power of the camera shake. The higher the number, the more the camera shakes.
+ * @property {baa.timer} _shakeTimer How long the screenshake takes.
+ * @property {boolean} active If the camera is active. Set it to false to stop moving and drawing with the camera.
+ * @property {number} zoom How far the camera is zoomed in. 1 means not zoomed in at all.
+ * @property {number} speed How fast the camera moves.
+ * @param 	 {number} x The horizontal position of the camera on the screen.	 
+ * @param 	 {number} y The vertical position of the camera on the screen.
+ * @param 	 {number} width The width of the camera.
+ * @param 	 {number} height The height of the camera.
+ */
+baa.camera = baa.rect.extend("baa.camera");
+
+baa.camera.init = function (x,y,width,height) {
+		baa.camera.super.init(this,x,y,width,height);
+		this._window = baa.rect.new(x,y,width,height);
+		this._world;
+		this._follow;
+		this._velocity = baa.point.new();
+		this._real = baa.point.new();
+		this._shakeOffset = baa.point.new();
+		this._shakePower = 1;
+		this._shakeTimer = Timer.new(this,0).onUpdate("_screenshake");
+		this.active = true;
+		this.zoom = 1;
+		this.speed = 1;
+}
+
+/**
+ * Updates the camera's position
+ */
+baa.camera.update = function () {
+	if (this.active) {
+		if (this._follow) {
+			this._setVelocity();
+			this._move();
+		}
+
+		if (baa.keyboard.isDown(" ")) {
+			this._screenshake();
+		}
+
+		this._real.x = Math.floor(this.x + this._shakeOffset.x);
+		this._real.y = Math.floor(this.y + this._shakeOffset.y);
+	}
+}
+
+/**
+ * Sets the velocity of the camera
+ */
+baa.camera._setVelocity = function () {
+	if (baa.util.distance(this.centerX(),this.centerY(),this._follow.centerX(),this.centerY()) > 1) {
+		// print(this._x,this._follow.x);
+		this._velocity.x = Math.abs(this.centerX()-this._follow.centerX()) * baa.util.sign(this.centerX() - this._follow.centerX());
+		this._velocity.y = Math.abs(this.centerY()-this._follow.centerY()) * baa.util.sign(this.centerY() - this._follow.centerY());
+	}
+	else {
+		this._velocity.x = 0;
+		this._velocity.y = 0;
+	}
+}
+
+/**
+ * Moves the camera
+ */
+baa.camera._move = function () {
+	this.x -= this._velocity.x * this.speed * dt;
+	this.y -= this._velocity.y * this.speed * dt;
+	if (this._world) {
+		this.x = Math.max(this._world.left(),Math.min(this.x, this._world.right()-this.width));
+		this.y = Math.max(this._world.top(),Math.min(this.y, this._world.bottom()-this.height));
+	}
+
+	if (this._world) {
+		this.x = Math.max(this._world.left(),Math.min(this.x, this._world.right()-this.width));
+		this.y = Math.max(this._world.top(),Math.min(this.y, this._world.bottom()-this.height));
+	}
+}
+
+/**
+ * Sets the position of the shake offset
+ */
+baa.camera._screenshake = function () {
+	this._shakeOffset.x = Math.cos(Math.random()*Math.PI)*this._shakePower;
+	this._shakeOffset.y = Math.sin(Math.random()*Math.PI)*this._shakePower;
+}
+
+/**
+ * Starts the camera. After this, everything that is drawn, is inside the camera.
+ */
+baa.camera.start = function () {
+	baa.graphics.push();
+	baa.graphics.setScissor(
+		function () { 
+			baa.graphics.rectangle("scissor",this)
+		},
+		this._window
+	);
+	// baa.graphics.scale(this._zoom);
+	baa.graphics.translate(-this._real.x + this._window.x,-this._real.y + this._window.y);
+}
+
+/**
+ * Stops the camera. Now everything drawn after this will be drawn normally again.
+ */
+baa.camera.stop = function () {
+	baa.graphics.setScissor();
+	baa.graphics.pop();
+}
+
+/**
+ * Sets the window, the rectangle of the camera on screen. The x and y position decide where the camera will be drawn.
+ * @param {number} x      The horizontal position of the camera on screen.
+ * @param {number} y      The vertical position of the camera on screen.
+ * @param {number} width  The width of the camera.
+ * @param {number} height The height of the camera.
+ */
+baa.camera.setWindow = function (x,y,width,height) {
+	this._window.set(x,y,width,height);
+	this.width = width;
+	this.height = height;
+}
+
+/**
+ * Sets the boundaries of the world. The camera does not go outside of these boundaries.
+ * @param {number} x      The horizontal position of the boundary of the world.
+ * @param {number} y      The vertical position of the boundary of the world.
+ * @param {number} width  The width of boundary of the world.
+ * @param {number} height The height of the boundary of the world.
+ */
+baa.camera.setWorld = function (x,y,width,height) {
+	if (x!=null) {
+		this._world = baa.rect.new(x,y,width,height);
+	} 
+	else {
+		this._world = null;
+	}
+}
+
+/**
+ * Sets the object the camera should follow.
+ * @param {baa.rect|null} obj The object the camera should follow. If no argument is given, the camera won't follow any object instead. 
+ */
+baa.camera.setFollow = function (obj) {
+	if (obj) {
+		this._follow = obj;
+	}
+	else {
+		this._follow = null;
+	}
+}
+
+/**
+ * Returns the object the camera currently follows
+ * @return {baa.rect|null} The object the camera follows. If the camera doesn't follow any object, null is returned.
+ */
+baa.camera.getFollow = function () {
+	return this._follow;
+}
+
+/**
+ * Sets the activation of the camera. 
+ * @param {boolean} active 
+ */
+baa.camera.setActive = function (active) {
+	this.active = active
+}
+
+/**
+ * Returns the current activation state of the camera.
+ * @return {boolean} The activation of the camera.
+ */
+baa.camera.getActive = function () {
+	return this.active;
+}
+
+/**
+ * Shakes the camera.
+ * @param  {number} [power=3] How much the screen should shake. Use a number higher than 0. 
+ * If 0, shaking currently going on will stop. If null, The default will be used.
+ * @param  {number} [time=0.3]  How long the camera should shake.
+ */
+baa.camera.shake = function (power,time) {
+	if (power != 0) {
+		this._shakePower = power || 3;
+		this._shakeTimer.reset(time || 0.3);
+	}
+	else {
+		this._shakeTimer.reset(0);
+	}
+}
+
+/**
+ * A global camera. It's update and drawn automatically.
+ */
+Camera = baa.camera.new();
 
 /////////////////////////////
 /////////////////////////////
@@ -4534,7 +4886,6 @@ baa._debug.draw = function () {
 	if (this.active) {
 		baa.graphics.setLineWidth(3);
 		this.oDrawCalls = this.drawCalls;
-		baa.graphics.origin();
 		if (this.active && !this.hide) {
 			this.windows.draw(baa.group.forward);
 		}
@@ -4662,7 +5013,7 @@ baa._debug.window.init = function (obj,name,x,y) {
 	this.dataY = 50;
 	this.selectorY = -200;
 	this.width = 210;
-	this.height = 400;
+	this.height = 100;
 	this.rounding = 0.5
 
 	this.obj = obj;
@@ -4831,7 +5182,11 @@ baa._debug.window.drawData = function () {
 	//TODO: Zorg ervoor dat dit niet meer in draw staat. Veel shit wordt hier gemaakt
 	//en geupdate, wat in de update loop moet. Bovendien zorgt het voor die bug
 	//die er voor zorgt dat je op dingen achteraan eerst klikt. Dank u!
-	baa.graphics.setScissor(this.x,this.y,this.width,this.height);
+
+	function shape () {
+		baa.graphics.rectangle("scissor",this.x,this.y,this.width,this.height);
+	}
+	baa.graphics.setScissor(shape,this);
 	var i = 0;
 
 
@@ -5116,6 +5471,6 @@ baa.graphics.push and pop for colors, linewidth, all that stuff.
 
 baa.button class
 
+*/
 
-
- */
+ 

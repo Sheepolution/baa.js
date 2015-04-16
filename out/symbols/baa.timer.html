@@ -201,6 +201,8 @@ ul.inheritsList
 	
 	<li><a href="../symbols/baa.button.html">baa.button</a></li>
 	
+	<li><a href="../symbols/baa.camera.html">baa.camera</a></li>
+	
 	<li><a href="../symbols/baa.circle.html">baa.circle</a></li>
 	
 	<li><a href="../symbols/baa.entity.html">baa.entity</a></li>
@@ -332,6 +334,24 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
+								<div class="fixedFont">baa.timer.<b><a href="../symbols/baa.timer.html#.onComplete">onComplete</a></b>(func, obj)
+								</div>
+								<div class="description">Sets the function that will be called every time the timer updates.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">baa.timer.<b><a href="../symbols/baa.timer.html#.onUpdate">onUpdate</a></b>(func, obj)
+								</div>
+								<div class="description">Sets the function that will be called every time the timer updates.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
 								<div class="fixedFont">baa.timer.<b><a href="../symbols/baa.timer.html#.pause">pause</a></b>()
 								</div>
 								<div class="description">Pauses the timer from playing.</div>
@@ -350,7 +370,7 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
-								<div class="fixedFont">baa.timer.<b><a href="../symbols/baa.timer.html#.reset">reset</a></b>()
+								<div class="fixedFont">baa.timer.<b><a href="../symbols/baa.timer.html#.reset">reset</a></b>(time)
 								</div>
 								<div class="description">Resets the timer, making it start from the beginning.</div>
 							</td>
@@ -579,6 +599,104 @@ This can either be the name of the function as a string, or a function on its ow
 
 					<hr />
 				
+					<a name=".onComplete"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					<span class="light">{<a href="../symbols/baa.timer.html">baa.timer</a>}</span>
+					<span class="light">baa.timer.</span><b>onComplete</b>(func, obj)
+					
+					</div>
+					<div class="description">
+						Sets the function that will be called every time the timer updates.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string|function}</span> <b>func</b>
+									
+								</dt>
+								<dd>The function to be called.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
+									<i>Optional</i>
+								</dt>
+								<dd>The object that this function is called with. If no object is set, the timer's object will be used instead.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{<a href="../symbols/baa.timer.html">baa.timer</a>}</span> The timer, to allow further extending.</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name=".onUpdate"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					<span class="light">{<a href="../symbols/baa.timer.html">baa.timer</a>}</span>
+					<span class="light">baa.timer.</span><b>onUpdate</b>(func, obj)
+					
+					</div>
+					<div class="description">
+						Sets the function that will be called every time the timer updates.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string|function}</span> <b>func</b>
+									
+								</dt>
+								<dd>The function to be called.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
+									
+								</dt>
+								<dd>The object that this function is called with.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{<a href="../symbols/baa.timer.html">baa.timer</a>}</span> The timer, to allow further extending.</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
 					<a name=".pause"> </a>
 					<div class="fixedFont">&lt;static&gt; 
 					
@@ -633,7 +751,7 @@ This can either be the name of the function as a string, or a function on its ow
 					<div class="fixedFont">&lt;static&gt; 
 					
 					
-					<span class="light">baa.timer.</span><b>reset</b>()
+					<span class="light">baa.timer.</span><b>reset</b>(time)
 					
 					</div>
 					<div class="description">
@@ -644,6 +762,17 @@ This can either be the name of the function as a string, or a function on its ow
 					
 					
 					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<b>time</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
 						
 						
 						
@@ -796,7 +925,7 @@ or an object with properties that have to be a certain value.
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Apr 11 2015 02:09:14 GMT+0200 (CEST)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Apr 16 2015 02:25:00 GMT+0200 (CEST)
 		</div>
 	</body>
 </html>

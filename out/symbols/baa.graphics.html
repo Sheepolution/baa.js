@@ -201,6 +201,8 @@ ul.inheritsList
 	
 	<li><a href="../symbols/baa.button.html">baa.button</a></li>
 	
+	<li><a href="../symbols/baa.camera.html">baa.camera</a></li>
+	
 	<li><a href="../symbols/baa.circle.html">baa.circle</a></li>
 	
 	<li><a href="../symbols/baa.entity.html">baa.entity</a></li>
@@ -373,9 +375,29 @@ ul.inheritsList
 							<td class="attributes">&lt;private&gt; &lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
+								baa.graphics.<b><a href="../symbols/baa.graphics.html#._globalScale">_globalScale</a></b>
+								</div>
+								<div class="description">The scale of the game.1</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;private&gt; &lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
 								baa.graphics.<b><a href="../symbols/baa.graphics.html#._images">_images</a></b>
 								</div>
 								<div class="description">All the preloaded images</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;private&gt; &lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								baa.graphics.<b><a href="../symbols/baa.graphics.html#._stacks">_stacks</a></b>
+								</div>
+								<div class="description">A number that mimics the number of stack created and destroyed by baa.graphics.push and baa.graphics.pop.</div>
 							</td>
 						</tr>
 					
@@ -801,9 +823,9 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
-								<div class="fixedFont">baa.graphics.<b><a href="../symbols/baa.graphics.html#.setScissor">setScissor</a></b>(x, y, width, height)
+								<div class="fixedFont">baa.graphics.<b><a href="../symbols/baa.graphics.html#.setScissor">setScissor</a></b>(shape, obj)
 								</div>
-								<div class="description">Sets a rectangle on the canvas, that cuts off all graphics outside that box.</div>
+								<div class="description">Cuts out a shape, that makes only things drawn inside this shape to appear on the screen.</div>
 							</td>
 						</tr>
 					
@@ -1056,6 +1078,28 @@ ul.inheritsList
 
 					<hr />
 				
+					<a name="._globalScale"> </a>
+					<div class="fixedFont">&lt;private&gt; &lt;static&gt; 
+					
+					
+					<span class="light">baa.graphics.</span><b>_globalScale</b>
+					
+					</div>
+					<div class="description">
+						The scale of the game.1
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
 					<a name="._images"> </a>
 					<div class="fixedFont">&lt;private&gt; &lt;static&gt; 
 					
@@ -1080,6 +1124,28 @@ ul.inheritsList
 							<dd><a href="../symbols/baa.graphics.html#.preload">baa.graphics.preload</a></dd>
 							
 							</dl>
+						
+						
+
+					<hr />
+				
+					<a name="._stacks"> </a>
+					<div class="fixedFont">&lt;private&gt; &lt;static&gt; 
+					
+					
+					<span class="light">baa.graphics.</span><b>_stacks</b>
+					
+					</div>
+					<div class="description">
+						A number that mimics the number of stack created and destroyed by baa.graphics.push and baa.graphics.pop.
+						
+						
+					</div>
+					
+					
+
+						
+						
 						
 						
 
@@ -3144,11 +3210,11 @@ Options: "source-over", "source-in", "source-out", "source-atop", "destination-o
 					<div class="fixedFont">&lt;static&gt; 
 					
 					
-					<span class="light">baa.graphics.</span><b>setScissor</b>(x, y, width, height)
+					<span class="light">baa.graphics.</span><b>setScissor</b>(shape, obj)
 					
 					</div>
 					<div class="description">
-						Sets a rectangle on the canvas, that cuts off all graphics outside that box.
+						Cuts out a shape, that makes only things drawn inside this shape to appear on the screen.
 						
 						
 					</div>
@@ -3160,28 +3226,16 @@ Options: "source-over", "source-in", "source-out", "source-atop", "destination-o
 							<dt class="heading">Parameters:</dt>
 							
 								<dt>
-									<span class="light fixedFont">{number|null}</span> <b>x</b>
-									
+									<span class="light fixedFont">{function}</span> <b>shape</b>
+									<i>Optional</i>
 								</dt>
-								<dd>The horizontal position of the scissor. If this is null, it will remove the current scissor.</dd>
+								<dd>A function with geometry draw calls. The draw calls must use "scissor" as draw mode.</dd>
 							
 								<dt>
-									<span class="light fixedFont">{number}</span> <b>y</b>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
 									
 								</dt>
-								<dd>The vertical position of the scissor.</dd>
-							
-								<dt>
-									<span class="light fixedFont">{number}</span> <b>width</b>
-									
-								</dt>
-								<dd>The width of the scissor</dd>
-							
-								<dt>
-									<span class="light fixedFont">{number}</span> <b>height</b>
-									
-								</dt>
-								<dd>The height of the scissor</dd>
+								<dd>The object to call the shape function with.</dd>
 							
 							</dl>
 						
@@ -3398,7 +3452,7 @@ Options: "source-over", "source-in", "source-out", "source-atop", "destination-o
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Apr 11 2015 02:09:14 GMT+0200 (CEST)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Apr 16 2015 02:25:00 GMT+0200 (CEST)
 		</div>
 	</body>
 </html>

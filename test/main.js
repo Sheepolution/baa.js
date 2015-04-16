@@ -17,13 +17,14 @@ baa.draw = function () {
 }
 
 baa.config = function (t) {
-
+	t.height = 300;
 }
 
 baa.graphics.preload("png",
 	"numbers",
 	"logo",
-	"button_big"
+	"button_big",
+	"player"
 );
 
 baa.audio.preload("ogg",
